@@ -2,6 +2,7 @@
   "name": "enhanced-enum",
   "version": "0.0.0",
   "description": "a enhanced enum use typescript",
+  "keywords": ["enum", "typescript"],
   "types": "./dist/index.d.ts",
   "files": [
     "dist"
