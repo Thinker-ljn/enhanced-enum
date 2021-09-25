@@ -2,30 +2,30 @@ type Value = number | string
 type AnyObject = Record<string, unknown>
 type NullAndObject = AnyObject | null
 
-interface IDictOption<E extends NullAndObject> {
-  value: Value
+interface IDictOption<E extends NullAndObject, V extends Value> {
+  value: V
   label: string
   extra?: E
 }
 
-interface IMapper<T, E extends NullAndObject> {
+interface IMapper<T, E extends NullAndObject, V extends Value> {
   readonly key: keyof T
   readonly label: string
-  readonly value: Value
+  readonly value: V
   readonly extra?: E
 }
 
 type LabelString = string
-type IEnumValue<E extends NullAndObject> = E extends null
-  ? LabelString | [LabelString, Value]
-  : [LabelString, E] | [LabelString, Value, E]
+type IEnumValue<E extends NullAndObject, V extends Value> = E extends null
+  ? LabelString | [LabelString, V]
+  : [LabelString, E] | [LabelString, V, E]
 
 type GetKeyFn<T extends NullAndObject> = (obj: T) => (keyof T)[]
 function getKeys<T extends NullAndObject>(obj: T) {
   return (Object.keys as GetKeyFn<T>)(obj)
 }
 
-interface IEnumResult<T, E extends NullAndObject, V> {
+interface IEnumResult<T, E extends NullAndObject, V extends Value> {
   /** VALUE Mapper By User Defined Key */
   VALUE: {
     [K in keyof T]: V
@@ -33,23 +33,23 @@ interface IEnumResult<T, E extends NullAndObject, V> {
 
   /** LABEL by value */
   LABEL: {
-    [K in Value]: string
+    [K in V]: string
   }
 
   /** EXTRA by value */
   EXTRA: {
-    [K in Value]: E | undefined
+    [K in V]: E | undefined
   }
 
   /** Mapper by value */
   MAPPER: {
-    [K in Value]: IMapper<T, E>
+    [K in V]: IMapper<T, E, V>
   }
   /** Dict list */
-  DICT: IDictOption<E>[]
+  DICT: IDictOption<E, V>[]
 }
 
-function isPlainValue(value: Value | AnyObject): value is Value {
+function isPlainValue<V extends Value>(value: V | AnyObject): value is V {
   const valueType = typeof value
   return valueType === 'string' || valueType === 'number'
 }
@@ -65,37 +65,47 @@ function getExtra(valueOrExtra: AnyObject | Value, extra: AnyObject | Value) {
   return undefined
 }
 
-export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
-  function destructDefValue(defValue: IEnumValue<E>): IDictOption<E> {
+export function genMakeEnhancedEnum<
+  E extends NullAndObject = null,
+  V extends Value = number
+>() {
+  function destructDefValue(
+    defValue: IEnumValue<E, V>,
+    defaultValue: V
+  ): IDictOption<E, V> {
     if (typeof defValue === 'string') {
-      return { label: defValue, value: '' }
+      return { label: defValue, value: defaultValue }
     }
     const [display, valueOrExtra, extra] = defValue
     return {
       label: display,
-      value: isPlainValue(valueOrExtra) ? valueOrExtra : '',
+      value: isPlainValue(valueOrExtra) ? (valueOrExtra as V) : defaultValue,
       extra: getExtra(valueOrExtra, extra) as E, // Todo
     }
   }
 
-  function makeEnhancedEnum<T extends Record<keyof T, IEnumValue<E>>>(
+  function makeEnhancedEnum<T extends Record<keyof T, IEnumValue<E, V>>>(
     input: T,
     offset = 0
-  ): IEnumResult<T, E, Value> {
+  ): IEnumResult<T, E, V> {
     const result = {
-      DICT: [] as IDictOption<E>[],
+      DICT: [] as IDictOption<E, V>[],
       VALUE: {},
       EXTRA: {},
       LABEL: {},
       MAPPER: {},
-    } as IEnumResult<T, E, Value>
+    } as IEnumResult<T, E, V>
     const keys = getKeys(input)
     keys.forEach((key, i) => {
-      const rawDisplay = input[key] as IEnumValue<E>
+      const rawDisplay = input[key] as IEnumValue<E, V>
       const defaultValue = i + offset
-      const { label, value: cutsomValue, extra } = destructDefValue(rawDisplay)
+      const {
+        label,
+        value: cutsomValue,
+        extra,
+      } = destructDefValue(rawDisplay, defaultValue as V)
 
-      const value = cutsomValue || defaultValue
+      const value = cutsomValue
 
       result.VALUE[key] = value
       result.LABEL[value] = label
@@ -117,4 +127,5 @@ export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
 
   return makeEnhancedEnum
 }
-export const makeEnhancedEnum = genMakeEnhancedEnum<null>()
+
+export const makeEnhancedEnum = genMakeEnhancedEnum<null, number>()
