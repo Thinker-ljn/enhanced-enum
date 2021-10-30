@@ -1,15 +1,29 @@
-import { genMakeEnhancedEnum, makeEnhancedEnum } from '@/enhanced-enum'
+import {
+  buildIllegalMsg,
+  checkKey,
+  EnhancedEnumConfig,
+  genMakeEnhancedEnum,
+  KeyValueType,
+  makeEnhancedEnum,
+} from '@/enhanced-enum'
 
-describe('base enum', () => {
-  it('start with default 0', () => {
-    const STATUS = makeEnhancedEnum({
+function genDefault(offset: EnhancedEnumConfig | number = 0) {
+  return makeEnhancedEnum(
+    {
       /** 第一个 */
       A: '第一个',
       /** 第二个 */
       B: '第二个',
       /** 第三个 */
       C: '第三个',
-    })
+    },
+    offset
+  )
+}
+
+describe('base enum', () => {
+  it('start with default 0', () => {
+    const STATUS = genDefault()
     expect(STATUS.DICT).toMatchObject([
       { value: 0, label: '第一个' },
       { value: 1, label: '第二个' },
@@ -37,17 +51,7 @@ describe('base enum', () => {
   })
 
   it('start with custom offset', () => {
-    const STATUS = makeEnhancedEnum(
-      {
-        /** 第一个 */
-        A: '第一个',
-        /** 第二个 */
-        B: '第二个',
-        /** 第三个 */
-        C: '第三个',
-      },
-      2
-    )
+    const STATUS = genDefault(2)
     expect(STATUS.DICT).toMatchObject([
       { value: 2, label: '第一个' },
       { value: 3, label: '第二个' },
@@ -133,14 +137,7 @@ describe('with extra props', () => {
 
 describe('bind value', () => {
   it('bind primitive value', () => {
-    const STATUS = makeEnhancedEnum({
-      /** 第一个 */
-      A: '第一个',
-      /** 第二个 */
-      B: '第二个',
-      /** 第三个 */
-      C: '第三个',
-    })
+    const STATUS = genDefault()
 
     const eA = STATUS.bind(0)
 
@@ -154,14 +151,7 @@ describe('bind value', () => {
   })
 
   it('bind getter value', () => {
-    const STATUS = makeEnhancedEnum({
-      /** 第一个 */
-      A: '第一个',
-      /** 第二个 */
-      B: '第二个',
-      /** 第三个 */
-      C: '第三个',
-    })
+    const STATUS = genDefault()
 
     const eB = STATUS.bindGetter(() => 1)
 
@@ -169,5 +159,54 @@ describe('bind value', () => {
     expect(eB.in('A', 'B')).toBe(true)
     expect(eB.in('C', 'A')).toBe(false)
     expect(eB.not('C', 'A')).toBe(true)
+  })
+})
+
+function genDefault2(offset: EnhancedEnumConfig | number = 0) {
+  return makeEnhancedEnum(
+    {
+      /** 第一个 */
+      AZ_AZ: '第一个',
+      /** 第二个 */
+      BZ_BZ: '第二个',
+      /** 第三个 */
+      CZ_CZ: '第三个',
+    },
+    offset
+  )
+}
+
+describe('use key as value', () => {
+  const STATUS = genDefault2({ useKeyAsValue: true })
+  expect(STATUS.VALUE.AZ_AZ).toBe('AZ_AZ')
+  expect(STATUS.VALUE.BZ_BZ).toBe('BZ_BZ')
+
+  const STATUS2 = genDefault2({ useKeyAsValue: KeyValueType.UPPER_CAMEL_CASE })
+  expect(STATUS2.VALUE.AZ_AZ).toBe('AzAz')
+  expect(STATUS2.VALUE.BZ_BZ).toBe('BzBz')
+
+  const STATUS3 = genDefault2({ useKeyAsValue: KeyValueType.LOWER_CAMEL_CASE })
+  expect(STATUS3.VALUE.AZ_AZ).toBe('azAz')
+  expect(STATUS3.VALUE.BZ_BZ).toBe('bzBz')
+
+  const STATUS4 = genDefault2({ useKeyAsValue: KeyValueType.SNAKE_CASE })
+  expect(STATUS4.VALUE.AZ_AZ).toBe('az_az')
+  expect(STATUS4.VALUE.BZ_BZ).toBe('bz_bz')
+
+  const STATUS5 = genDefault2({ useKeyAsValue: KeyValueType.KEBAB_CASE })
+  expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
+  expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
+})
+
+describe('check key', () => {
+  it('legal key', () => {
+    expect(checkKey('AA_BB_CC')).toBe(true)
+    expect(checkKey('AA_BB_CC213')).toBe(true)
+    expect(checkKey('A')).toBe(true)
+  })
+  it('illegal key', () => {
+    ;['A_', '_AA_BC', 'a1', 'a1_b', 'aa_bb_cc'].forEach((k) => {
+      expect(() => checkKey(k)).toThrowError(buildIllegalMsg(k))
+    })
   })
 })

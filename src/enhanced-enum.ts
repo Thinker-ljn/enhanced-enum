@@ -77,6 +77,67 @@ function getExtra(valueOrExtra: AnyObject | Value, extra: AnyObject | Value) {
   return undefined
 }
 
+export enum KeyValueType {
+  UPPER_CAMEL_CASE = 'UPPER_CAMEL_CASE', // UpperCamelCase
+  LOWER_CAMEL_CASE = 'LOWER_CAMEL_CASE', // lowerCamelCase
+  SNAKE_CASE = 'SNAKE_CASE', // snake_case
+  KEBAB_CASE = 'KEBAB_CASE', // kebab-case
+}
+export interface EnhancedEnumConfig {
+  useKeyAsValue?: boolean | KeyValueType
+  offset?: number
+}
+
+export function buildIllegalMsg(key: string) {
+  return `Illegal key: ${key}, key must match \`/^([A-Z][A-Z_]+)?([A-Z]([0-9]*))$/\``
+}
+export function checkKey(key: string) {
+  if (!/^([A-Z][A-Z_]+)?([A-Z]([0-9]*))$/.test(key)) {
+    throw new Error(buildIllegalMsg(key))
+  } else {
+    return true
+  }
+}
+
+function parserKey(key: string, type?: KeyValueType | boolean): string {
+  checkKey(key)
+  switch (type) {
+    case KeyValueType.UPPER_CAMEL_CASE:
+      return key
+        .toLowerCase()
+        .replace(/(?:^|_)(\w)/g, (_, m1) => m1.toUpperCase())
+    case KeyValueType.LOWER_CAMEL_CASE:
+      return key.toLowerCase().replace(/_(\w)/g, (_, m1) => m1.toUpperCase())
+    case KeyValueType.SNAKE_CASE:
+      return key.toLowerCase()
+    case KeyValueType.KEBAB_CASE:
+      return key.toLowerCase().replace('_', '-')
+    default:
+      return key
+  }
+}
+
+function parserDefaultValue(
+  config: EnhancedEnumConfig | number,
+  key: string,
+  index: number
+) {
+  if (typeof config === 'number') {
+    // offset
+    return config + index
+  }
+
+  if (config.useKeyAsValue) {
+    return parserKey(key, config.useKeyAsValue)
+  }
+
+  if (config.offset) {
+    return config.offset + index
+  }
+
+  return index
+}
+
 export function genMakeEnhancedEnum<
   E extends NullAndObject = null,
   V extends Value = number
@@ -98,7 +159,7 @@ export function genMakeEnhancedEnum<
 
   function makeEnhancedEnum<T extends Record<keyof T, IEnumValue<E, V>>>(
     input: T,
-    offset = 0
+    offset: EnhancedEnumConfig | number = 0
   ): IEnumResult<T, E, V> {
     const result = {
       bind(value) {
@@ -136,7 +197,7 @@ export function genMakeEnhancedEnum<
     const keys = getKeys(input)
     keys.forEach((key, i) => {
       const rawDisplay = input[key] as IEnumValue<E, V>
-      const defaultValue = i + offset
+      const defaultValue = parserDefaultValue(offset, key as string, i)
       const {
         label,
         value: cutsomValue,

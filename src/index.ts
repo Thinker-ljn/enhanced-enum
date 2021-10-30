@@ -1,2 +1,6 @@
-import { genMakeEnhancedEnum, makeEnhancedEnum } from './enhanced-enum'
-export { genMakeEnhancedEnum, makeEnhancedEnum }
+import {
+  genMakeEnhancedEnum,
+  makeEnhancedEnum,
+  KeyValueType,
+} from './enhanced-enum'
+export { genMakeEnhancedEnum, makeEnhancedEnum, KeyValueType }
