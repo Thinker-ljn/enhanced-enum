@@ -25,7 +25,7 @@ function getKeys<T extends NullAndObject>(obj: T) {
   return (Object.keys as GetKeyFn<T>)(obj)
 }
 
-interface IEnumResult<T, E extends NullAndObject, V extends Value> {
+export interface IEnumResult<T, E extends NullAndObject, V extends Value> {
   /** VALUE Mapper By User Defined Key */
   VALUE: {
     [K in keyof T]: V
@@ -47,6 +47,18 @@ interface IEnumResult<T, E extends NullAndObject, V extends Value> {
   }
   /** Dict list */
   DICT: IDictOption<E, V>[]
+  bindGetter(getter: () => V | undefined): {
+    in(...keys: (keyof T)[]): boolean
+    not(...keys: (keyof T)[]): boolean
+  }
+  bind(v: V): {
+    in(...keys: (keyof T)[]): boolean
+    not(...keys: (keyof T)[]): boolean
+    value?: V
+    label?: string
+    extra?: E
+    mapper?: IMapper<T, E, V>
+  }
 }
 
 function isPlainValue<V extends Value>(value: V | AnyObject): value is V {
@@ -89,6 +101,32 @@ export function genMakeEnhancedEnum<
     offset = 0
   ): IEnumResult<T, E, V> {
     const result = {
+      bind(value) {
+        return {
+          in(...keys) {
+            return keys.some((k) => result.VALUE[k] === value)
+          },
+          not(...keys) {
+            return keys.every((k) => result.VALUE[k] !== value)
+          },
+          value,
+          label: result.LABEL[value],
+          extra: result.EXTRA[value],
+          mapper: result.MAPPER[value],
+        }
+      },
+      bindGetter(getter) {
+        return {
+          in(...keys) {
+            const value = getter()
+            return keys.some((k) => result.VALUE[k] === value)
+          },
+          not(...keys) {
+            const value = getter()
+            return keys.every((k) => result.VALUE[k] !== value)
+          },
+        }
+      },
       DICT: [] as IDictOption<E, V>[],
       VALUE: {},
       EXTRA: {},

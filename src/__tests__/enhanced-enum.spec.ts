@@ -130,3 +130,44 @@ describe('with extra props', () => {
     expect(STATUS.EXTRA[STATUS.VALUE.C]).toMatchObject({})
   })
 })
+
+describe('bind value', () => {
+  it('bind primitive value', () => {
+    const STATUS = makeEnhancedEnum({
+      /** 第一个 */
+      A: '第一个',
+      /** 第二个 */
+      B: '第二个',
+      /** 第三个 */
+      C: '第三个',
+    })
+
+    const eA = STATUS.bind(0)
+
+    expect(eA.in('A')).toBe(true)
+    expect(eA.in('A', 'B')).toBe(true)
+    expect(eA.in('C', 'B')).toBe(false)
+    expect(eA.not('C', 'B')).toBe(true)
+
+    expect(eA.value).toBe(0)
+    expect(eA.label).toBe('第一个')
+  })
+
+  it('bind getter value', () => {
+    const STATUS = makeEnhancedEnum({
+      /** 第一个 */
+      A: '第一个',
+      /** 第二个 */
+      B: '第二个',
+      /** 第三个 */
+      C: '第三个',
+    })
+
+    const eB = STATUS.bindGetter(() => 1)
+
+    expect(eB.in('B')).toBe(true)
+    expect(eB.in('A', 'B')).toBe(true)
+    expect(eB.in('C', 'A')).toBe(false)
+    expect(eB.not('C', 'A')).toBe(true)
+  })
+})
