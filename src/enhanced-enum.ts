@@ -86,6 +86,7 @@ export enum KeyValueType {
 export interface EnhancedEnumConfig {
   useKeyAsValue?: boolean | KeyValueType
   offset?: number
+  autoIncrementAfterAlias?: boolean
 }
 
 export function buildIllegalMsg(key: string) {
@@ -117,16 +118,19 @@ function parserKey(key: string, type?: KeyValueType | boolean): string {
   }
 }
 
+function parserConfig(config: EnhancedEnumConfig | number) {
+  if (typeof config === 'number') {
+    return {
+      offset: config,
+    }
+  }
+  return config
+}
 function parserDefaultValue(
-  config: EnhancedEnumConfig | number,
+  config: EnhancedEnumConfig,
   key: string,
   index: number
 ) {
-  if (typeof config === 'number') {
-    // offset
-    return config + index
-  }
-
   if (config.useKeyAsValue) {
     return parserKey(key, config.useKeyAsValue)
   }
@@ -136,6 +140,44 @@ function parserDefaultValue(
   }
 
   return index
+}
+
+function parserNumberOffset(config: EnhancedEnumConfig | number): number {
+  if (typeof config === 'number') {
+    return config
+  }
+
+  if (!config.useKeyAsValue && typeof config.offset === 'number') {
+    return config.offset
+  }
+
+  return 0
+}
+
+function wrapperAutoIncrement<T>(
+  config: EnhancedEnumConfig,
+  keys: (keyof T)[],
+  callback: (key: keyof T, index: string | number) => string | number
+) {
+  const start = parserNumberOffset(config)
+  const useIncrement = config.autoIncrementAfterAlias
+  let prev: string | number = start
+  let numberValue = start
+  keys.forEach((key, index) => {
+    let defaultValue
+    if (useIncrement) {
+      defaultValue = numberValue
+    } else {
+      defaultValue = parserDefaultValue(config, key as string, index)
+    }
+
+    prev = callback(key, defaultValue)
+    if (typeof prev === 'number') {
+      numberValue = prev + 1
+    } else {
+      numberValue++
+    }
+  })
 }
 
 export function genMakeEnhancedEnum<
@@ -161,6 +203,7 @@ export function genMakeEnhancedEnum<
     input: T,
     offset: EnhancedEnumConfig | number = 0
   ): IEnumResult<T, E, V> {
+    const config = parserConfig(offset)
     const result = {
       bind(value) {
         return {
@@ -195,9 +238,9 @@ export function genMakeEnhancedEnum<
       MAPPER: {},
     } as IEnumResult<T, E, V>
     const keys = getKeys(input)
-    keys.forEach((key, i) => {
+    wrapperAutoIncrement(config, keys, (key, defaultValue) => {
       const rawDisplay = input[key] as IEnumValue<E, V>
-      const defaultValue = parserDefaultValue(offset, key as string, i)
+      // const defaultValue = parserDefaultValue(offset, key as string, i)
       const {
         label,
         value: cutsomValue,
@@ -220,6 +263,8 @@ export function genMakeEnhancedEnum<
         value,
         extra,
       })
+
+      return value
     })
     return result
   }

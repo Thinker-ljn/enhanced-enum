@@ -210,3 +210,29 @@ describe('check key', () => {
     })
   })
 })
+
+describe('autoIncrementAfterAlias', () => {
+  const STATUS = makeEnhancedEnum(
+    {
+      /** 第二 */
+      A: '第二',
+      /** 第十一 */
+      B: ['第十一', 11],
+      /** 第十二 */
+      C: '第十二',
+      D: ['第二十一', 21],
+      E: '第二十二',
+    },
+    {
+      offset: 2,
+      autoIncrementAfterAlias: true,
+    }
+  )
+  it('should auto increment', () => {
+    expect(STATUS.VALUE.A).toBe(2)
+    expect(STATUS.VALUE.B).toBe(11)
+    expect(STATUS.VALUE.C).toBe(12)
+    expect(STATUS.VALUE.D).toBe(21)
+    expect(STATUS.VALUE.E).toBe(22)
+  })
+})
