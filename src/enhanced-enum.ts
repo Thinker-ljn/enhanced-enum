@@ -2,66 +2,68 @@ type Value = number | string
 type AnyObject = Record<string, unknown>
 type NullAndObject = AnyObject | null
 
-interface IDictOption<E extends NullAndObject, V extends Value> {
-  value: V
+interface IDictOption<E extends NullAndObject> {
+  value: Value
   label: string
   extra?: E
 }
 
-interface IMapper<T, E extends NullAndObject, V extends Value> {
+interface IMapper<T, E extends NullAndObject> {
   readonly key: keyof T
   readonly label: string
-  readonly value: V
+  readonly value: Value
   readonly extra?: E
 }
 
 type LabelString = string
-type IEnumValue<E extends NullAndObject, V extends Value> = E extends null
-  ? LabelString | [LabelString, V]
-  : [LabelString, E] | [LabelString, V, E]
+type IEnumValue<E extends NullAndObject> = E extends null
+  ? LabelString | [LabelString, Value]
+  : [LabelString, E] | [LabelString, Value, E]
 
 type GetKeyFn<T extends NullAndObject> = (obj: T) => (keyof T)[]
 function getKeys<T extends NullAndObject>(obj: T) {
   return (Object.keys as GetKeyFn<T>)(obj)
 }
 
-export interface IEnumResult<T, E extends NullAndObject, V extends Value> {
+export interface IEnumResult<T, E extends NullAndObject> {
   /** VALUE Mapper By User Defined Key */
   VALUE: {
-    [K in keyof T]: V
+    [K in keyof T]: Value
   }
 
   /** LABEL by value */
   LABEL: {
-    [K in V]: string
+    [K in Value]: string
   }
 
   /** EXTRA by value */
   EXTRA: {
-    [K in V]: E | undefined
+    [K in Value]: E | undefined
   }
 
   /** Mapper by value */
   MAPPER: {
-    [K in V]: IMapper<T, E, V>
+    [K in Value]: IMapper<T, E>
   }
   /** Dict list */
-  DICT: IDictOption<E, V>[]
-  bindGetter(getter: () => V | undefined): {
+  DICT: IDictOption<E>[]
+  bindGetter(getter: () => Value | undefined): {
     in(...keys: (keyof T)[]): boolean
     not(...keys: (keyof T)[]): boolean
   }
-  bind(v: V): {
+  bind(v: Value): {
     in(...keys: (keyof T)[]): boolean
     not(...keys: (keyof T)[]): boolean
-    value?: V
+    value?: Value
     label?: string
     extra?: E
-    mapper?: IMapper<T, E, V>
+    mapper?: IMapper<T, E>
   }
 }
 
-function isPlainValue<V extends Value>(value: V | AnyObject): value is V {
+function isPlainValue<V extends Value>(
+  value: Value | AnyObject
+): value is Value {
   const valueType = typeof value
   return valueType === 'string' || valueType === 'number'
 }
@@ -180,29 +182,28 @@ function wrapperAutoIncrement<T>(
   })
 }
 
-export function genMakeEnhancedEnum<
-  E extends NullAndObject = null,
-  V extends Value = number
->() {
+export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
   function destructDefValue(
-    defValue: IEnumValue<E, V>,
-    defaultValue: V
-  ): IDictOption<E, V> {
+    defValue: IEnumValue<E>,
+    defaultValue: Value
+  ): IDictOption<E> {
     if (typeof defValue === 'string') {
       return { label: defValue, value: defaultValue }
     }
     const [display, valueOrExtra, extra] = defValue
     return {
       label: display,
-      value: isPlainValue(valueOrExtra) ? (valueOrExtra as V) : defaultValue,
+      value: isPlainValue(valueOrExtra)
+        ? (valueOrExtra as Value)
+        : defaultValue,
       extra: getExtra(valueOrExtra, extra) as E, // Todo
     }
   }
 
-  function makeEnhancedEnum<T extends Record<keyof T, IEnumValue<E, V>>>(
+  function makeEnhancedEnum<T extends Record<keyof T, IEnumValue<E>>>(
     input: T,
     offset: EnhancedEnumConfig | number = 0
-  ): IEnumResult<T, E, V> {
+  ): IEnumResult<T, E> {
     const config = parserConfig(offset)
     const result = {
       bind(value) {
@@ -231,21 +232,21 @@ export function genMakeEnhancedEnum<
           },
         }
       },
-      DICT: [] as IDictOption<E, V>[],
+      DICT: [] as IDictOption<E>[],
       VALUE: {},
       EXTRA: {},
       LABEL: {},
       MAPPER: {},
-    } as IEnumResult<T, E, V>
+    } as IEnumResult<T, E>
     const keys = getKeys(input)
     wrapperAutoIncrement(config, keys, (key, defaultValue) => {
-      const rawDisplay = input[key] as IEnumValue<E, V>
+      const rawDisplay = input[key] as IEnumValue<E>
       // const defaultValue = parserDefaultValue(offset, key as string, i)
       const {
         label,
         value: cutsomValue,
         extra,
-      } = destructDefValue(rawDisplay, defaultValue as V)
+      } = destructDefValue(rawDisplay, defaultValue as Value)
 
       const value = cutsomValue
 
@@ -272,4 +273,4 @@ export function genMakeEnhancedEnum<
   return makeEnhancedEnum
 }
 
-export const makeEnhancedEnum = genMakeEnhancedEnum<null, number>()
+export const makeEnhancedEnum = genMakeEnhancedEnum<null>()

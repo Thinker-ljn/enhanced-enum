@@ -220,8 +220,14 @@ describe('autoIncrementAfterAlias', () => {
       B: ['第十一', 11],
       /** 第十二 */
       C: '第十二',
+      /** 第二十一 */
       D: ['第二十一', 21],
+      /** 第二十二 */
       E: '第二十二',
+      /** 第二十三 */
+      F: ['第二十三', '第二十三'],
+      /** 第二十四 */
+      G: '第二十四',
     },
     {
       offset: 2,
@@ -234,5 +240,7 @@ describe('autoIncrementAfterAlias', () => {
     expect(STATUS.VALUE.C).toBe(12)
     expect(STATUS.VALUE.D).toBe(21)
     expect(STATUS.VALUE.E).toBe(22)
+    expect(STATUS.VALUE.F).toBe('第二十三')
+    expect(STATUS.VALUE.G).toBe(24)
   })
 })
