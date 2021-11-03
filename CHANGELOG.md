@@ -1,3 +1,12 @@
+# [0.3.0](https://github.com/Thinker-ljn/enhanced-enum/compare/v0.2.0...v0.3.0) (2021-11-03)
+
+
+### Features
+
+* add props `autoIncrementAfterAlias` ([9e18b6c](https://github.com/Thinker-ljn/enhanced-enum/commit/9e18b6cfbeea69fa30d04744880a7d7ddd2ce3bf))
+
+
+
 # [0.2.0](https://github.com/Thinker-ljn/enhanced-enum/compare/v0.1.1...v0.2.0) (2021-11-01)
 
 
