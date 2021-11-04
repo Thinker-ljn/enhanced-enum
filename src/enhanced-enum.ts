@@ -86,6 +86,7 @@ export enum KeyValueType {
   KEBAB_CASE = 'KEBAB_CASE', // kebab-case
 }
 export interface EnhancedEnumConfig {
+  useStringNumberValue?: boolean
   useKeyAsValue?: boolean | KeyValueType
   offset?: number
   autoIncrementAfterAlias?: boolean
@@ -247,7 +248,7 @@ export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
         extra,
       } = destructDefValue(rawDisplay, defaultValue as Value)
 
-      const value = cutsomValue
+      const value = config.useStringNumberValue ? cutsomValue + '' : cutsomValue
 
       result.VALUE[key] = value
       result.LABEL[value] = label
@@ -264,7 +265,7 @@ export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
         extra,
       })
 
-      return value
+      return cutsomValue
     })
     return result
   }

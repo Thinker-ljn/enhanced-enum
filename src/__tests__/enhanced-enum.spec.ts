@@ -211,8 +211,8 @@ describe('check key', () => {
   })
 })
 
-describe('autoIncrementAfterAlias', () => {
-  const STATUS = makeEnhancedEnum(
+const genDefault3 = (config: EnhancedEnumConfig) => {
+  return makeEnhancedEnum(
     {
       /** 第二 */
       A: '第二',
@@ -229,11 +229,15 @@ describe('autoIncrementAfterAlias', () => {
       /** 第二十四 */
       G: '第二十四',
     },
-    {
-      offset: 2,
-      autoIncrementAfterAlias: true,
-    }
+    config
   )
+}
+
+describe('autoIncrementAfterAlias', () => {
+  const STATUS = genDefault3({
+    offset: 2,
+    autoIncrementAfterAlias: true,
+  })
   it('should auto increment', () => {
     expect(STATUS.VALUE.A).toBe(2)
     expect(STATUS.VALUE.B).toBe(11)
@@ -242,5 +246,29 @@ describe('autoIncrementAfterAlias', () => {
     expect(STATUS.VALUE.E).toBe(22)
     expect(STATUS.VALUE.F).toBe('第二十三')
     expect(STATUS.VALUE.G).toBe(24)
+  })
+})
+
+describe('useStringNumberValue', () => {
+  it('should return string type', () => {
+    const STATUS = genDefault({ useStringNumberValue: true })
+    expect(STATUS.VALUE.A).toBe('0')
+    expect(STATUS.VALUE.B).toBe('1')
+    expect(STATUS.VALUE.C).toBe('2')
+  })
+
+  it('should return string type and auto increment', () => {
+    const STATUS = genDefault3({
+      offset: 2,
+      autoIncrementAfterAlias: true,
+      useStringNumberValue: true,
+    })
+    expect(STATUS.VALUE.A).toBe('2')
+    expect(STATUS.VALUE.B).toBe('11')
+    expect(STATUS.VALUE.C).toBe('12')
+    expect(STATUS.VALUE.D).toBe('21')
+    expect(STATUS.VALUE.E).toBe('22')
+    expect(STATUS.VALUE.F).toBe('第二十三')
+    expect(STATUS.VALUE.G).toBe('24')
   })
 })
