@@ -1,3 +1,12 @@
+# [0.4.0](https://github.com/Thinker-ljn/enhanced-enum/compare/v0.3.0...v0.4.0) (2021-11-04)
+
+
+### Features
+
+* add props `useStringNumberValue` ([737320f](https://github.com/Thinker-ljn/enhanced-enum/commit/737320facef245f3f0c0ba435829c3a710376c07))
+
+
+
 # [0.3.0](https://github.com/Thinker-ljn/enhanced-enum/compare/v0.2.0...v0.3.0) (2021-11-03)
 
 
