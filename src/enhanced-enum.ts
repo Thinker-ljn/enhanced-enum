@@ -241,7 +241,6 @@ export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
     const keys = getKeys(input)
     wrapperAutoIncrement(config, keys, (key, defaultValue) => {
       const rawDisplay = input[key] as IEnumValue<E>
-      // const defaultValue = parserDefaultValue(offset, key as string, i)
       const {
         label,
         value: cutsomValue,
