@@ -27,7 +27,8 @@
     "release": "node ./scripts/release.js"
   },
   "gitHooks": {
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "commit-msg": "node ./scripts/verify-commit-msg.js"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": "eslint --fix"
