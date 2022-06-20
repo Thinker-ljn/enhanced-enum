@@ -1,13 +1,13 @@
 import {
   buildIllegalMsg,
   checkKey,
-  EnhancedEnumConfig,
+  EEConfig,
   genMakeEnhancedEnum,
-  KeyValueType,
+  EEKeyValueType,
   makeEnhancedEnum,
 } from '@/enhanced-enum'
 
-function genDefault(offset: EnhancedEnumConfig | number = 0) {
+function genDefault(offset: EEConfig | number = 0) {
   return makeEnhancedEnum(
     {
       /** 第一个 */
@@ -162,7 +162,7 @@ describe('bind value', () => {
   })
 })
 
-function genDefault2(offset: EnhancedEnumConfig | number = 0) {
+function genDefault2(offset: EEConfig | number = 0) {
   return makeEnhancedEnum(
     {
       /** 第一个 */
@@ -181,19 +181,23 @@ describe('use key as value', () => {
   expect(STATUS.VALUE.AZ_AZ).toBe('AZ_AZ')
   expect(STATUS.VALUE.BZ_BZ).toBe('BZ_BZ')
 
-  const STATUS2 = genDefault2({ useKeyAsValue: KeyValueType.UPPER_CAMEL_CASE })
+  const STATUS2 = genDefault2({
+    useKeyAsValue: EEKeyValueType.UPPER_CAMEL_CASE,
+  })
   expect(STATUS2.VALUE.AZ_AZ).toBe('AzAz')
   expect(STATUS2.VALUE.BZ_BZ).toBe('BzBz')
 
-  const STATUS3 = genDefault2({ useKeyAsValue: KeyValueType.LOWER_CAMEL_CASE })
+  const STATUS3 = genDefault2({
+    useKeyAsValue: EEKeyValueType.LOWER_CAMEL_CASE,
+  })
   expect(STATUS3.VALUE.AZ_AZ).toBe('azAz')
   expect(STATUS3.VALUE.BZ_BZ).toBe('bzBz')
 
-  const STATUS4 = genDefault2({ useKeyAsValue: KeyValueType.SNAKE_CASE })
+  const STATUS4 = genDefault2({ useKeyAsValue: EEKeyValueType.SNAKE_CASE })
   expect(STATUS4.VALUE.AZ_AZ).toBe('az_az')
   expect(STATUS4.VALUE.BZ_BZ).toBe('bz_bz')
 
-  const STATUS5 = genDefault2({ useKeyAsValue: KeyValueType.KEBAB_CASE })
+  const STATUS5 = genDefault2({ useKeyAsValue: EEKeyValueType.KEBAB_CASE })
   expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
   expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
 })
@@ -211,7 +215,7 @@ describe('check key', () => {
   })
 })
 
-const genDefault3 = (config: EnhancedEnumConfig) => {
+const genDefault3 = (config: EEConfig) => {
   return makeEnhancedEnum(
     {
       /** 第二 */

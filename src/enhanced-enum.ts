@@ -1,74 +1,76 @@
-type Value = number | string
+type EEValue = number | string
 type AnyObject = Record<string, unknown>
 type NullAndObject = AnyObject | null
 
-interface IDictOption<E extends NullAndObject> {
-  value: Value
+interface EEDictOption<E extends NullAndObject, V extends EEValue = EEValue> {
+  value: V
   label: string
   extra?: E
 }
 
-interface IMapper<T, E extends NullAndObject> {
+interface EEMapper<T, E extends NullAndObject, V extends EEValue = EEValue> {
   readonly key: keyof T
   readonly label: string
-  readonly value: Value
+  readonly value: V
   readonly extra?: E
 }
 
 type LabelString = string
-type IEnumValue<E extends NullAndObject> = E extends null
-  ? LabelString | [LabelString, Value]
-  : [LabelString, E] | [LabelString, Value, E]
+type EEValueConfig<
+  E extends NullAndObject,
+  V extends EEValue = EEValue
+> = E extends null
+  ? LabelString | [LabelString, V]
+  : [LabelString, E] | [LabelString, V, E]
 
 type GetKeyFn<T extends NullAndObject> = (obj: T) => (keyof T)[]
 function getKeys<T extends NullAndObject>(obj: T) {
   return (Object.keys as GetKeyFn<T>)(obj)
 }
 
-export interface IEnumResult<T, E extends NullAndObject> {
+export interface EEResult<
+  T,
+  E extends NullAndObject,
+  V extends EEValue = EEValue
+> {
   /** VALUE Mapper By User Defined Key */
-  VALUE: {
-    [K in keyof T]: Value
-  }
+  VALUE: Record<keyof T, V>
 
   /** LABEL by value */
-  LABEL: {
-    [K in Value]: string
-  }
+  LABEL: Record<V, string>
 
   /** EXTRA by value */
-  EXTRA: {
-    [K in Value]: E | undefined
-  }
+  EXTRA: Record<V, E | undefined>
 
   /** Mapper by value */
-  MAPPER: {
-    [K in Value]: IMapper<T, E>
-  }
+  MAPPER: Record<V, EEMapper<T, E, V>>
   /** Dict list */
-  DICT: IDictOption<E>[]
-  bindGetter(getter: () => Value | undefined): {
+  DICT: EEDictOption<E, V>[]
+  bindGetter(getter: () => V | undefined): {
     in(...keys: (keyof T)[]): boolean
     not(...keys: (keyof T)[]): boolean
   }
-  bind(v: Value): {
+  bind(v: V): {
     in(...keys: (keyof T)[]): boolean
     not(...keys: (keyof T)[]): boolean
-    value?: Value
+    value?: V
     label?: string
     extra?: E
-    mapper?: IMapper<T, E>
+    mapper?: EEMapper<T, E>
   }
 }
 
-function isPlainValue<V extends Value>(
-  value: Value | AnyObject
-): value is Value {
+function isPlainValue<V extends EEValue = EEValue>(
+  value: V | AnyObject
+): value is V {
   const valueType = typeof value
   return valueType === 'string' || valueType === 'number'
 }
 
-function getExtra(valueOrExtra: AnyObject | Value, extra: AnyObject | Value) {
+function getExtra<V extends EEValue = EEValue>(
+  valueOrExtra: AnyObject | V,
+  extra?: AnyObject | V
+) {
   if (typeof extra === 'object') {
     return extra
   }
@@ -79,18 +81,30 @@ function getExtra(valueOrExtra: AnyObject | Value, extra: AnyObject | Value) {
   return undefined
 }
 
+/**@deprecated use EEKeyValueType */
 export enum KeyValueType {
   UPPER_CAMEL_CASE = 'UPPER_CAMEL_CASE', // UpperCamelCase
   LOWER_CAMEL_CASE = 'LOWER_CAMEL_CASE', // lowerCamelCase
   SNAKE_CASE = 'SNAKE_CASE', // snake_case
   KEBAB_CASE = 'KEBAB_CASE', // kebab-case
 }
+
+export enum EEKeyValueType {
+  UPPER_CAMEL_CASE = 'UPPER_CAMEL_CASE', // UpperCamelCase
+  LOWER_CAMEL_CASE = 'LOWER_CAMEL_CASE', // lowerCamelCase
+  SNAKE_CASE = 'SNAKE_CASE', // snake_case
+  KEBAB_CASE = 'KEBAB_CASE', // kebab-case
+}
+
+/**@deprecated use EEConfig */
 export interface EnhancedEnumConfig {
   useStringNumberValue?: boolean
-  useKeyAsValue?: boolean | KeyValueType
+  useKeyAsValue?: boolean | EEKeyValueType | KeyValueType
   offset?: number
   autoIncrementAfterAlias?: boolean
 }
+
+export type EEConfig = EnhancedEnumConfig
 
 export function buildIllegalMsg(key: string) {
   return `Illegal key: ${key}, key must match \`/^([A-Z][A-Z_]+)?([A-Z]([0-9]*))$/\``
@@ -103,25 +117,28 @@ export function checkKey(key: string) {
   }
 }
 
-function parserKey(key: string, type?: KeyValueType | boolean): string {
+function parserKey(
+  key: string,
+  type?: EEKeyValueType | KeyValueType | boolean
+): string {
   checkKey(key)
   switch (type) {
-    case KeyValueType.UPPER_CAMEL_CASE:
+    case EEKeyValueType.UPPER_CAMEL_CASE:
       return key
         .toLowerCase()
         .replace(/(?:^|_)(\w)/g, (_, m1) => m1.toUpperCase())
-    case KeyValueType.LOWER_CAMEL_CASE:
+    case EEKeyValueType.LOWER_CAMEL_CASE:
       return key.toLowerCase().replace(/_(\w)/g, (_, m1) => m1.toUpperCase())
-    case KeyValueType.SNAKE_CASE:
+    case EEKeyValueType.SNAKE_CASE:
       return key.toLowerCase()
-    case KeyValueType.KEBAB_CASE:
+    case EEKeyValueType.KEBAB_CASE:
       return key.toLowerCase().replace('_', '-')
     default:
       return key
   }
 }
 
-function parserConfig(config: EnhancedEnumConfig | number) {
+function parserConfig(config: EEConfig | number) {
   if (typeof config === 'number') {
     return {
       offset: config,
@@ -129,11 +146,7 @@ function parserConfig(config: EnhancedEnumConfig | number) {
   }
   return config
 }
-function parserDefaultValue(
-  config: EnhancedEnumConfig,
-  key: string,
-  index: number
-) {
+function parserDefaultValue(config: EEConfig, key: string, index: number) {
   if (config.useKeyAsValue) {
     return parserKey(key, config.useKeyAsValue)
   }
@@ -145,7 +158,7 @@ function parserDefaultValue(
   return index
 }
 
-function parserNumberOffset(config: EnhancedEnumConfig | number): number {
+function parserNumberOffset(config: EEConfig | number): number {
   if (typeof config === 'number') {
     return config
   }
@@ -158,7 +171,7 @@ function parserNumberOffset(config: EnhancedEnumConfig | number): number {
 }
 
 function wrapperAutoIncrement<T>(
-  config: EnhancedEnumConfig,
+  config: EEConfig,
   keys: (keyof T)[],
   callback: (key: keyof T, index: string | number) => string | number
 ) {
@@ -183,30 +196,31 @@ function wrapperAutoIncrement<T>(
   })
 }
 
-export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
+export function genMakeEnhancedEnum<
+  E extends NullAndObject = null,
+  V extends EEValue = EEValue
+>() {
   function destructDefValue(
-    defValue: IEnumValue<E>,
-    defaultValue: Value
-  ): IDictOption<E> {
+    defValue: EEValueConfig<E, V>,
+    defaultValue: V
+  ): EEDictOption<E, V> {
     if (typeof defValue === 'string') {
       return { label: defValue, value: defaultValue }
     }
     const [display, valueOrExtra, extra] = defValue
     return {
       label: display,
-      value: isPlainValue(valueOrExtra)
-        ? (valueOrExtra as Value)
-        : defaultValue,
+      value: isPlainValue(valueOrExtra) ? (valueOrExtra as V) : defaultValue,
       extra: getExtra(valueOrExtra, extra) as E, // Todo
     }
   }
 
-  function makeEnhancedEnum<T extends Record<keyof T, IEnumValue<E>>>(
+  function makeEnhancedEnum<T extends Record<keyof T, EEValueConfig<E, V>>>(
     input: T,
-    offset: EnhancedEnumConfig | number = 0
-  ): IEnumResult<T, E> {
+    offset: EEConfig | number = 0
+  ): EEResult<T, E, V> {
     const config = parserConfig(offset)
-    const result = {
+    const result: EEResult<T, E, V> = {
       bind(value) {
         return {
           in(...keys) {
@@ -233,22 +247,24 @@ export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
           },
         }
       },
-      DICT: [] as IDictOption<E>[],
-      VALUE: {},
-      EXTRA: {},
-      LABEL: {},
-      MAPPER: {},
-    } as IEnumResult<T, E>
+      DICT: [],
+      VALUE: {} as Record<keyof T, V>,
+      EXTRA: {} as Record<V, E | undefined>,
+      LABEL: {} as Record<V, string>,
+      MAPPER: {} as Record<V, EEMapper<T, E, V>>,
+    }
     const keys = getKeys(input)
     wrapperAutoIncrement(config, keys, (key, defaultValue) => {
-      const rawDisplay = input[key] as IEnumValue<E>
+      const rawDisplay = input[key] as EEValueConfig<E, V>
       const {
         label,
         value: cutsomValue,
         extra,
-      } = destructDefValue(rawDisplay, defaultValue as Value)
+      } = destructDefValue(rawDisplay, defaultValue as V)
 
-      const value = config.useStringNumberValue ? cutsomValue + '' : cutsomValue
+      const value = config.useStringNumberValue
+        ? (String(cutsomValue) as V)
+        : cutsomValue
 
       result.VALUE[key] = value
       result.LABEL[value] = label
@@ -274,3 +290,5 @@ export function genMakeEnhancedEnum<E extends NullAndObject = null>() {
 }
 
 export const makeEnhancedEnum = genMakeEnhancedEnum<null>()
+export const makeEnhancedStringEnum = genMakeEnhancedEnum<null, string>()
+export const makeEnhancedNumberEnum = genMakeEnhancedEnum<null, number>()
