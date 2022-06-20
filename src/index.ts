@@ -4,10 +4,10 @@ import {
   makeEnhancedNumberEnum,
   makeEnhancedStringEnum,
   KeyValueType,
-  EEConfig,
   EEKeyValueType,
-  EEResult,
 } from './enhanced-enum'
+
+import type { EEConfig, EEResult } from './enhanced-enum'
 
 export {
   genMakeEnhancedEnum,
