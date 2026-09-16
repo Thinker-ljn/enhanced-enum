@@ -1,4 +1,5 @@
 import {
+  defineEnum,
   genMakeEnhancedEnum,
   makeEnhancedEnum,
   makeEnhancedNumberEnum,
@@ -7,9 +8,16 @@ import {
   EEKeyValueType,
 } from './enhanced-enum'
 
-import type { EEConfig, EEResult } from './enhanced-enum'
+import type {
+  DefinedEnum,
+  EEConfig,
+  EEResult,
+  EnumDefinition,
+  EnumDefinitionEntry,
+} from './enhanced-enum'
 
 export {
+  defineEnum,
   genMakeEnhancedEnum,
   makeEnhancedEnum,
   makeEnhancedNumberEnum,
@@ -18,4 +26,7 @@ export {
   EEConfig,
   EEKeyValueType,
   EEResult,
+  DefinedEnum,
+  EnumDefinition,
+  EnumDefinitionEntry,
 }

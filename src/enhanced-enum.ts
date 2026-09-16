@@ -2,6 +2,81 @@ type EEValue = number | string
 type AnyObject = Record<string, unknown>
 type NullAndObject = AnyObject | null
 
+/** A modern enum entry with an explicit value, display label, and optional metadata. */
+export type EnumDefinitionEntry<V extends EEValue = EEValue> = Readonly<{
+  value: V
+  label: string
+}>
+
+export type EnumDefinition = Readonly<Record<string, EnumDefinitionEntry>>
+type EnumKey<T extends EnumDefinition> = Extract<keyof T, string>
+type EnumValue<T extends EnumDefinition> = T[EnumKey<T>]['value']
+type EnumItem<T extends EnumDefinition> = {
+  [K in EnumKey<T>]: Readonly<T[K] & { key: K }>
+}[EnumKey<T>]
+type EnumItemByValue<
+  T extends EnumDefinition,
+  V extends EnumValue<T>
+> = Extract<EnumItem<T>, { readonly value: V }>
+
+/**
+ * The literal-preserving result of {@link defineEnum}.
+ *
+ * `VALUE` supports key-to-value access, while `MAPPER` supports value-to-item
+ * access. `options` and `DICT` contain the same readonly items for UI usage.
+ */
+export interface DefinedEnum<T extends EnumDefinition> {
+  readonly VALUE: { readonly [K in EnumKey<T>]: T[K]['value'] }
+  readonly MAPPER: {
+    readonly [V in EnumValue<T>]: EnumItemByValue<T, V>
+  }
+  readonly options: readonly EnumItem<T>[]
+  readonly DICT: readonly EnumItem<T>[]
+  get<V extends EnumValue<T>>(value: V): EnumItemByValue<T, V> | undefined
+  get(value: EEValue): EnumItem<T> | undefined
+}
+
+/**
+ * Defines an enum-like object while preserving literal values, labels, and
+ * per-entry metadata. Prefer this API when consumers require precise types.
+ */
+export function defineEnum<const T extends EnumDefinition>(
+  definition: T
+): DefinedEnum<T> {
+  const value = Object.create(null) as {
+    -readonly [K in EnumKey<T>]: T[K]['value']
+  }
+  const mapper = Object.create(null) as {
+    -readonly [V in EnumValue<T>]: EnumItemByValue<T, V>
+  }
+  const options: EnumItem<T>[] = []
+
+  getKeys(definition).forEach((rawKey) => {
+    const key = rawKey as EnumKey<T>
+    const entry = definition[key]
+    const item = Object.freeze({ key, ...entry }) as EnumItem<T>
+
+    value[key] = entry.value
+    mapper[entry.value as EnumValue<T>] = item as EnumItemByValue<
+      T,
+      EnumValue<T>
+    >
+    options.push(item)
+  })
+
+  const readonlyOptions = Object.freeze(options)
+  const readonlyMapper = Object.freeze(mapper)
+  return Object.freeze({
+    VALUE: Object.freeze(value),
+    MAPPER: readonlyMapper,
+    options: readonlyOptions,
+    DICT: readonlyOptions,
+    get(candidate: EEValue) {
+      return readonlyMapper[candidate as EnumValue<T>]
+    },
+  }) as DefinedEnum<T>
+}
+
 interface EEDictOption<E extends NullAndObject, V extends EEValue = EEValue> {
   value: V
   label: string

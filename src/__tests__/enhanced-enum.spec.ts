@@ -1,6 +1,7 @@
 import {
   buildIllegalMsg,
   checkKey,
+  defineEnum,
   EEConfig,
   genMakeEnhancedEnum,
   EEKeyValueType,
@@ -95,6 +96,42 @@ describe('base enum', () => {
     expect(STATUS.VALUE.A).toBe(2)
     expect(STATUS.VALUE.B).toBe(1000)
     expect(STATUS.VALUE.C).toBe(4)
+  })
+})
+
+describe('defineEnum', () => {
+  const STATUS = defineEnum({
+    SUCCESS: { value: 1, label: '成功', color: 'green' },
+    FAIL: { value: 2, label: '失败', color: 'red', retryable: true },
+  })
+
+  it('builds key-to-value and value-to-item views', () => {
+    expect(STATUS.VALUE).toEqual({ SUCCESS: 1, FAIL: 2 })
+    expect(STATUS.MAPPER[1]).toEqual({
+      key: 'SUCCESS',
+      value: 1,
+      label: '成功',
+      color: 'green',
+    })
+  })
+
+  it('exposes readonly options for UI dictionaries', () => {
+    expect(STATUS.options).toEqual([
+      { key: 'SUCCESS', value: 1, label: '成功', color: 'green' },
+      { key: 'FAIL', value: 2, label: '失败', color: 'red', retryable: true },
+    ])
+    expect(STATUS.DICT).toBe(STATUS.options)
+  })
+
+  it('looks up a defined item by value', () => {
+    expect(STATUS.get(2)).toEqual({
+      key: 'FAIL',
+      value: 2,
+      label: '失败',
+      color: 'red',
+      retryable: true,
+    })
+    expect(STATUS.get(99)).toBeUndefined()
   })
 })
 
