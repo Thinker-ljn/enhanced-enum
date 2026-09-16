@@ -133,6 +133,31 @@ describe('defineEnum', () => {
     })
     expect(STATUS.get(99)).toBeUndefined()
   })
+
+  it('validates external keys and values before lookup', () => {
+    expect(STATUS.isKey('SUCCESS')).toBe(true)
+    expect(STATUS.isKey('UNKNOWN')).toBe(false)
+    expect(STATUS.isKey(1)).toBe(false)
+    expect(STATUS.isValue(1)).toBe(true)
+    expect(STATUS.isValue('1')).toBe(false)
+    expect(STATUS.isValue(null)).toBe(false)
+    expect(STATUS.fromKey('SUCCESS')).toEqual({
+      key: 'SUCCESS',
+      value: 1,
+      label: '成功',
+      color: 'green',
+    })
+    expect(STATUS.fromKey('UNKNOWN')).toBeUndefined()
+  })
+
+  it('rejects duplicate values', () => {
+    expect(() =>
+      defineEnum({
+        ONE: { value: 1, label: '一' },
+        ANOTHER_ONE: { value: 1, label: '另一个一' },
+      })
+    ).toThrowError('Duplicate enum value: 1')
+  })
 })
 
 describe('with extra props', () => {

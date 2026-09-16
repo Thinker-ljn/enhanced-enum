@@ -18,6 +18,10 @@ type EnumItemByValue<
   T extends EnumDefinition,
   V extends EnumValue<T>
 > = Extract<EnumItem<T>, { readonly value: V }>
+type EnumItemByKey<
+  T extends EnumDefinition,
+  K extends EnumKey<T>
+> = Extract<EnumItem<T>, { readonly key: K }>
 
 /**
  * The literal-preserving result of {@link defineEnum}.
@@ -32,8 +36,12 @@ export interface DefinedEnum<T extends EnumDefinition> {
   }
   readonly options: readonly EnumItem<T>[]
   readonly DICT: readonly EnumItem<T>[]
+  isKey(key: unknown): key is EnumKey<T>
+  isValue(value: unknown): value is EnumValue<T>
   get<V extends EnumValue<T>>(value: V): EnumItemByValue<T, V> | undefined
-  get(value: EEValue): EnumItem<T> | undefined
+  get(value: unknown): EnumItem<T> | undefined
+  fromKey<K extends EnumKey<T>>(key: K): EnumItemByKey<T, K>
+  fromKey(key: unknown): EnumItem<T> | undefined
 }
 
 /**
@@ -50,10 +58,16 @@ export function defineEnum<const T extends EnumDefinition>(
     -readonly [V in EnumValue<T>]: EnumItemByValue<T, V>
   }
   const options: EnumItem<T>[] = []
+  const values = new Set<EEValue>()
 
   getKeys(definition).forEach((rawKey) => {
     const key = rawKey as EnumKey<T>
     const entry = definition[key]
+    if (values.has(entry.value)) {
+      throw new Error(`Duplicate enum value: ${String(entry.value)}`)
+    }
+
+    values.add(entry.value)
     const item = Object.freeze({ key, ...entry }) as EnumItem<T>
 
     value[key] = entry.value
@@ -71,8 +85,30 @@ export function defineEnum<const T extends EnumDefinition>(
     MAPPER: readonlyMapper,
     options: readonlyOptions,
     DICT: readonlyOptions,
-    get(candidate: EEValue) {
-      return readonlyMapper[candidate as EnumValue<T>]
+    isKey(key: unknown): key is EnumKey<T> {
+      return (
+        typeof key === 'string' &&
+        Object.prototype.hasOwnProperty.call(definition, key)
+      )
+    },
+    isValue(candidate: unknown): candidate is EnumValue<T> {
+      return (
+        (typeof candidate === 'string' || typeof candidate === 'number') &&
+        values.has(candidate)
+      )
+    },
+    get(candidate: unknown) {
+      return (
+        (typeof candidate === 'string' || typeof candidate === 'number') &&
+        values.has(candidate)
+      )
+        ? readonlyMapper[candidate as EnumValue<T>]
+        : undefined
+    },
+    fromKey(key: unknown) {
+      return typeof key === 'string' && Object.prototype.hasOwnProperty.call(definition, key)
+        ? readonlyMapper[value[key as EnumKey<T>]]
+        : undefined
     },
   }) as DefinedEnum<T>
 }
