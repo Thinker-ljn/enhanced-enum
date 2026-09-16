@@ -14,7 +14,10 @@ export default defineConfig({
       entry: fileURLToPath(new URL('./src/index.ts', import.meta.url)),
       name: camelCaseName,
       formats: ['es', 'cjs', 'umd'],
-      fileName: (format) => `${packageJson.name}.${format}.js`,
+      fileName: (format) =>
+        format === 'cjs'
+          ? `${packageJson.name}.cjs`
+          : `${packageJson.name}.${format}.js`,
     },
     minify: prod,
     emptyOutDir: true,

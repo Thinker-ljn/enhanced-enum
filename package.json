@@ -16,13 +16,13 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/enhanced-enum.cjs.js",
+  "main": "./dist/enhanced-enum.cjs",
   "module": "./dist/enhanced-enum.es.js",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/enhanced-enum.es.js",
-      "require": "./dist/enhanced-enum.cjs.js"
+      "require": "./dist/enhanced-enum.cjs"
     }
   },
   "scripts": {
