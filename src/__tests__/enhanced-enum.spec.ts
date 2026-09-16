@@ -6,6 +6,7 @@ import {
   EEKeyValueType,
   makeEnhancedEnum,
 } from '@/enhanced-enum'
+import { describe, expect, it } from 'vitest'
 
 function genDefault(offset: EEConfig | number = 0) {
   return makeEnhancedEnum(
@@ -178,28 +179,30 @@ function genDefault2(offset: EEConfig | number = 0) {
 
 describe('use key as value', () => {
   const STATUS = genDefault2({ useKeyAsValue: true })
-  expect(STATUS.VALUE.AZ_AZ).toBe('AZ_AZ')
-  expect(STATUS.VALUE.BZ_BZ).toBe('BZ_BZ')
+  it('converts keys according to the configured format', () => {
+    expect(STATUS.VALUE.AZ_AZ).toBe('AZ_AZ')
+    expect(STATUS.VALUE.BZ_BZ).toBe('BZ_BZ')
 
-  const STATUS2 = genDefault2({
-    useKeyAsValue: EEKeyValueType.UPPER_CAMEL_CASE,
+    const STATUS2 = genDefault2({
+      useKeyAsValue: EEKeyValueType.UPPER_CAMEL_CASE,
+    })
+    expect(STATUS2.VALUE.AZ_AZ).toBe('AzAz')
+    expect(STATUS2.VALUE.BZ_BZ).toBe('BzBz')
+
+    const STATUS3 = genDefault2({
+      useKeyAsValue: EEKeyValueType.LOWER_CAMEL_CASE,
+    })
+    expect(STATUS3.VALUE.AZ_AZ).toBe('azAz')
+    expect(STATUS3.VALUE.BZ_BZ).toBe('bzBz')
+
+    const STATUS4 = genDefault2({ useKeyAsValue: EEKeyValueType.SNAKE_CASE })
+    expect(STATUS4.VALUE.AZ_AZ).toBe('az_az')
+    expect(STATUS4.VALUE.BZ_BZ).toBe('bz_bz')
+
+    const STATUS5 = genDefault2({ useKeyAsValue: EEKeyValueType.KEBAB_CASE })
+    expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
+    expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
   })
-  expect(STATUS2.VALUE.AZ_AZ).toBe('AzAz')
-  expect(STATUS2.VALUE.BZ_BZ).toBe('BzBz')
-
-  const STATUS3 = genDefault2({
-    useKeyAsValue: EEKeyValueType.LOWER_CAMEL_CASE,
-  })
-  expect(STATUS3.VALUE.AZ_AZ).toBe('azAz')
-  expect(STATUS3.VALUE.BZ_BZ).toBe('bzBz')
-
-  const STATUS4 = genDefault2({ useKeyAsValue: EEKeyValueType.SNAKE_CASE })
-  expect(STATUS4.VALUE.AZ_AZ).toBe('az_az')
-  expect(STATUS4.VALUE.BZ_BZ).toBe('bz_bz')
-
-  const STATUS5 = genDefault2({ useKeyAsValue: EEKeyValueType.KEBAB_CASE })
-  expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
-  expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
 })
 
 describe('check key', () => {

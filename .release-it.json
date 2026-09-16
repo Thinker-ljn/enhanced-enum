@@ -1,0 +1,25 @@
+{
+  "git": {
+    "requireCleanWorkingDir": true,
+    "requireUpstream": true,
+    "commitMessage": "release: v${version}",
+    "tagName": "v${version}",
+    "push": true
+  },
+  "npm": {
+    "publish": true,
+    "access": "public"
+  },
+  "github": {
+    "release": false
+  },
+  "hooks": {
+    "before:init": ["pnpm test", "pnpm lint", "pnpm build"]
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": "angular",
+      "infile": "CHANGELOG.md"
+    }
+  }
+}
