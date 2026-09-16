@@ -67,6 +67,41 @@ STATUS.get(999) // undefined
 
 `get` 和 `fromKey` 均可安全接收 `unknown`；传入已知字面量时会保留精确的返回类型。
 
+## 国际化标签
+
+库不管理翻译资源、当前语言或任何 UI 框架集成。多语言项目建议把稳定的 i18n key 放入 `label`，在渲染选项时由调用方翻译。
+
+```ts
+const STATUS = defineEnum({
+  SUCCESS: { value: 1, label: 'status.success', color: 'green' },
+  FAIL: { value: 2, label: 'status.fail', color: 'red' },
+})
+
+type Translate = (key: string) => string
+
+function toLocalizedOptions<T extends { label: string }>(
+  options: readonly T[],
+  translate: Translate
+) {
+  return options.map(({ label, ...item }) => ({
+    ...item,
+    label: translate(label),
+  }))
+}
+
+declare const translate: Translate
+
+toLocalizedOptions(STATUS.options, translate)
+// 当前语言：[
+//   { key: 'SUCCESS', value: 1, label: 'Success', color: 'green' },
+//   { key: 'FAIL', value: 2, label: 'Failure', color: 'red' },
+// ]
+```
+
+切换语言只需传入不同的 `translate` 函数；`value`、key 和业务元数据保持稳定。Vue I18n、i18next、FormatJS 或自定义翻译函数都可以实现 `Translate`，因此本库不需要引入它们的运行时依赖。
+
+若标签本身必须是后端返回的中文或其他展示文本，也可以直接存储展示文本。i18n key 是多语言场景的推荐约定，不是强制格式。
+
 ## 从旧 API 迁移
 
 `makeEnhancedEnum`、`makeEnhancedStringEnum`、`makeEnhancedNumberEnum` 和 `genMakeEnhancedEnum` 继续受支持，不会因 `defineEnum` 而移除。它们适合以下情况：
