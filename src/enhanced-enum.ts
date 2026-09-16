@@ -243,7 +243,7 @@ function parserKey(
     case EEKeyValueType.SNAKE_CASE:
       return key.toLowerCase()
     case EEKeyValueType.KEBAB_CASE:
-      return key.toLowerCase().replace('_', '-')
+      return key.toLowerCase().replace(/_/g, '-')
     default:
       return key
   }

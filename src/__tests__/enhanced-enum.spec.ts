@@ -264,6 +264,12 @@ describe('use key as value', () => {
     const STATUS5 = genDefault2({ useKeyAsValue: EEKeyValueType.KEBAB_CASE })
     expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
     expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
+    expect(
+      makeEnhancedEnum(
+        { AA_BB_CC: '多分段' },
+        { useKeyAsValue: EEKeyValueType.KEBAB_CASE }
+      ).VALUE.AA_BB_CC
+    ).toBe('aa-bb-cc')
   })
 })
 
