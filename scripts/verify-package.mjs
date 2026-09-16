@@ -9,6 +9,7 @@ const temporaryRoot = join(root, '.local', 'package-verification')
 const tarballRoot = join(temporaryRoot, 'tarballs')
 const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
 const tsc = join(root, 'node_modules', 'typescript', 'bin', 'tsc')
+const keepTemporaryFiles = process.argv.includes('--keep')
 
 function run(command, args, cwd = root) {
   const result = spawnSync(command, args, {
@@ -59,7 +60,11 @@ try {
   installAndRunFixture('consumer-esm', 'index.mjs')
   installAndRunFixture('consumer-cjs', 'index.cjs')
 } finally {
-  if (existsSync(temporaryRoot)) {
+  if (existsSync(temporaryRoot) && !keepTemporaryFiles) {
     rmSync(temporaryRoot, { recursive: true, force: true })
   }
+}
+
+if (keepTemporaryFiles) {
+  console.log(`Package verification files kept at ${temporaryRoot}`)
 }
