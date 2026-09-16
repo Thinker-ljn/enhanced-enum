@@ -6,7 +6,7 @@ import {
   makeEnhancedStringEnum,
   KeyValueType,
   EEKeyValueType,
-} from './enhanced-enum'
+} from './enhanced-enum.js'
 
 import type {
   DefinedEnum,
@@ -14,7 +14,7 @@ import type {
   EEResult,
   EnumDefinition,
   EnumDefinitionEntry,
-} from './enhanced-enum'
+} from './enhanced-enum.js'
 
 export {
   defineEnum,
