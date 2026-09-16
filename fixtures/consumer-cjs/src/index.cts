@@ -1,0 +1,19 @@
+import enhancedEnum = require('enhanced-enum')
+
+const STATUS = enhancedEnum.defineEnum({
+  SUCCESS: { value: 1, label: 'success', color: 'green' },
+  FAIL: { value: 2, label: 'failure', color: 'red' },
+})
+
+// @ts-expect-error the package declaration must preserve the literal value.
+const invalidStatusValue: 3 = STATUS.VALUE.SUCCESS
+void invalidStatusValue
+
+const item = STATUS.get(STATUS.VALUE.FAIL)
+if (!item || item.key !== 'FAIL' || item.color !== 'red') {
+  throw new Error('CJS consumer could not use defineEnum')
+}
+
+if (enhancedEnum.makeEnhancedEnum({ READY: 'ready' }).VALUE.READY !== 0) {
+  throw new Error('CJS consumer could not use makeEnhancedEnum')
+}

@@ -3,3 +3,6 @@ node_modules
 *.log
 .local
 graft/
+fixtures/**/dist
+fixtures/**/node_modules
+fixtures/**/pnpm-lock.yaml

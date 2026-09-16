@@ -32,6 +32,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "build": "vite build",
+    "verify:package": "node scripts/verify-package.mjs",
     "release": "release-it",
     "release:dry-run": "release-it --dry-run --no-git.requireUpstream --no-git.push --no-npm.publish"
   },

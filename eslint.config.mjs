@@ -16,9 +16,15 @@ export default tseslint.config(
   js.configs.recommended,
   tseslint.configs.recommended,
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.ts', 'fixtures/**/*.{ts,mts,cts}', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    files: ['fixtures/**/*.cts'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   prettier
