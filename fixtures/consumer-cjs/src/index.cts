@@ -14,8 +14,24 @@ if (!item || item.key !== 'FAIL' || item.color !== 'red') {
   throw new Error('CJS consumer could not use defineEnum')
 }
 
+if (!STATUS.matches(STATUS.VALUE.SUCCESS, 'SUCCESS')) {
+  throw new Error('CJS consumer could not use enum matching')
+}
+
 if (enhancedEnum.makeEnhancedEnum({ READY: 'ready' }).VALUE.READY !== 0) {
   throw new Error('CJS consumer could not use makeEnhancedEnum')
+}
+
+if (enhancedEnum.makeEnhancedStringEnum({ READY: ['ready', 'ready'] }).VALUE.READY !== 'ready') {
+  throw new Error('CJS consumer could not use makeEnhancedStringEnum')
+}
+
+if (enhancedEnum.makeEnhancedNumberEnum({ READY: ['ready', 1] }).VALUE.READY !== 1) {
+  throw new Error('CJS consumer could not use makeEnhancedNumberEnum')
+}
+
+if (enhancedEnum.genMakeEnhancedEnum<{ color: string }>()({ READY: ['ready', { color: 'green' }] }).EXTRA[0]?.color !== 'green') {
+  throw new Error('CJS consumer could not use genMakeEnhancedEnum')
 }
 
 const KEY_STATUS = enhancedEnum.defineKeyEnum(

@@ -2,7 +2,10 @@ import {
   defineEnum,
   defineKeyEnum,
   defineNumberEnum,
+  genMakeEnhancedEnum,
   makeEnhancedEnum,
+  makeEnhancedNumberEnum,
+  makeEnhancedStringEnum,
 } from 'enhanced-enum'
 
 const STATUS = defineEnum({
@@ -19,8 +22,24 @@ if (!item || item.key !== 'SUCCESS' || item.color !== 'green') {
   throw new Error('ESM consumer could not use defineEnum')
 }
 
+if (!STATUS.matches(STATUS.VALUE.SUCCESS, 'SUCCESS')) {
+  throw new Error('ESM consumer could not use enum matching')
+}
+
 if (makeEnhancedEnum({ READY: 'ready' }).VALUE.READY !== 0) {
   throw new Error('ESM consumer could not use makeEnhancedEnum')
+}
+
+if (makeEnhancedStringEnum({ READY: ['ready', 'ready'] }).VALUE.READY !== 'ready') {
+  throw new Error('ESM consumer could not use makeEnhancedStringEnum')
+}
+
+if (makeEnhancedNumberEnum({ READY: ['ready', 1] }).VALUE.READY !== 1) {
+  throw new Error('ESM consumer could not use makeEnhancedNumberEnum')
+}
+
+if (genMakeEnhancedEnum<{ color: string }>()({ READY: ['ready', { color: 'green' }] }).EXTRA[0]?.color !== 'green') {
+  throw new Error('ESM consumer could not use genMakeEnhancedEnum')
 }
 
 const KEY_STATUS = defineKeyEnum(

@@ -39,9 +39,14 @@ STATUS.options
 // ]
 
 STATUS.DICT === STATUS.options // true，DICT 是兼容别名
+
+STATUS.matches(STATUS.VALUE.SUCCESS, 'SUCCESS') // true
+STATUS.matches(STATUS.VALUE.SUCCESS, 'FAIL') // false
 ```
 
 类型会保留关联关系：`STATUS.VALUE.SUCCESS` 的类型是 `1`，`STATUS.get(1)` 的类型精确对应 `SUCCESS` 条目，而不是宽泛的 `string | number` 或所有条目的联合类型。
+
+`matches(value, ...keys)` 适合在已读取 value 后进行分支判断；它只接受当前枚举已定义的 key。`values`、`byValue` 和 `options` 是推荐成员，`VALUE`、`MAPPER` 和 `DICT` 是指向同一只读数据的兼容别名。
 
 ### 校验外部输入
 
@@ -164,6 +169,7 @@ toLocalizedOptions(STATUS.options, translate)
 | `STATUS.VALUE.SUCCESS` 是宽泛 value 类型 | `STATUS.VALUE.SUCCESS` 是字面量 `1` |
 | `DICT` 为 `{ value, label, extra }[]` | `options` 为保留每项元数据的只读数组 |
 | `useKeyAsValue` | `defineKeyEnum(..., { format })` |
+| 已弃用的 `KeyValueType` | `EEKeyValueType`；迁移到现代 API 时改用 `defineKeyEnum(..., { format })` |
 | `offset` | `defineNumberEnum(..., { start })` |
 | `autoIncrementAfterAlias` | `defineNumberEnum(..., { continueAfterExplicit: true })` |
 | `useStringNumberValue` | `defineNumberEnum(..., { output: 'string' })` |

@@ -14,7 +14,7 @@
     "release": false
   },
   "hooks": {
-    "before:init": ["pnpm test", "pnpm lint", "pnpm build"]
+    "before:init": ["pnpm test", "pnpm typecheck", "pnpm lint", "pnpm build", "pnpm verify:package"]
   },
   "plugins": {
     "@release-it/conventional-changelog": {
