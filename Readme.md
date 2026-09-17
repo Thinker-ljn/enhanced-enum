@@ -151,6 +151,12 @@ toLocalizedOptions(STATUS.options, translate)
 
 若标签本身必须是后端返回的中文或其他展示文本，也可以直接存储展示文本。i18n key 是多语言场景的推荐约定，不是强制格式。
 
+## 框架集成
+
+核心包不依赖 Vue 或 React。Vue 项目应在组件或组合函数中使用 `computed(() => STATUS.get(value))` 或 `computed(() => STATUS.matches(value, ...keys))`；React 组件通常直接在 render 中调用 `get` 和 `matches` 即可。`bindGetter` 不建立响应式订阅，也不参与框架生命周期。
+
+当前不发布空壳框架 adapter 包。未来 Vue 或 React adapter 的边界、测试要求和实现触发条件见 [框架适配层设计](docs/framework-adapters.md)。
+
 ## 从旧 API 迁移
 
 `makeEnhancedEnum`、`makeEnhancedStringEnum`、`makeEnhancedNumberEnum` 和 `genMakeEnhancedEnum` 继续受支持，不会因 `defineEnum` 而移除。它们适合以下情况：
