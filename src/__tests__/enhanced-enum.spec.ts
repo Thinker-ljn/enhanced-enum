@@ -2,6 +2,7 @@ import {
   buildIllegalMsg,
   checkKey,
   defineEnum,
+  defineKeyEnum,
   EEConfig,
   genMakeEnhancedEnum,
   EEKeyValueType,
@@ -159,6 +160,58 @@ describe('defineEnum', () => {
         ANOTHER_ONE: { value: 1, label: '另一个一' },
       })
     ).toThrowError('Duplicate enum value: 1')
+  })
+})
+
+describe('defineKeyEnum', () => {
+  it('derives values from keys and reuses the modern result surface', () => {
+    const STATUS = defineKeyEnum(
+      {
+        IN_PROGRESS: { label: '进行中', color: 'blue' },
+        DONE: { label: '完成', color: 'green' },
+      },
+      { format: 'kebab-case' }
+    )
+
+    expect(STATUS.values).toEqual({
+      IN_PROGRESS: 'in-progress',
+      DONE: 'done',
+    })
+    expect(STATUS.values).toBe(STATUS.VALUE)
+    expect(STATUS.byValue).toBe(STATUS.MAPPER)
+    expect(STATUS.options).toBe(STATUS.DICT)
+    expect(STATUS.get('in-progress')).toEqual({
+      key: 'IN_PROGRESS',
+      value: 'in-progress',
+      label: '进行中',
+      color: 'blue',
+    })
+  })
+
+  it('converts all supported formats', () => {
+    const definition = { IN_PROGRESS: { label: '进行中' } }
+
+    expect(defineKeyEnum(definition).values.IN_PROGRESS).toBe('IN_PROGRESS')
+    expect(
+      defineKeyEnum(definition, { format: 'upperCamelCase' }).values
+        .IN_PROGRESS
+    ).toBe('InProgress')
+    expect(
+      defineKeyEnum(definition, { format: 'lowerCamelCase' }).values
+        .IN_PROGRESS
+    ).toBe('inProgress')
+    expect(
+      defineKeyEnum(definition, { format: 'snake_case' }).values.IN_PROGRESS
+    ).toBe('in_progress')
+    expect(
+      defineKeyEnum(definition, { format: 'kebab-case' }).values.IN_PROGRESS
+    ).toBe('in-progress')
+  })
+
+  it('requires uppercase underscore keys', () => {
+    expect(() => defineKeyEnum({ inProgress: { label: '进行中' } })).toThrowError(
+      buildIllegalMsg('inProgress')
+    )
   })
 })
 

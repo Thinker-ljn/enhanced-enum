@@ -1,4 +1,4 @@
-import { defineEnum } from '@/enhanced-enum'
+import { defineEnum, defineKeyEnum } from '@/enhanced-enum'
 
 type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <
   Value
@@ -65,3 +65,35 @@ void STATUS.VALUE.UNKNOWN
 // @ts-expect-error a defined item's value must retain its literal type.
 const invalidValue: 3 = STATUS.VALUE.SUCCESS
 void invalidValue
+
+const KEY_STATUS = defineKeyEnum(
+  {
+    IN_PROGRESS: { label: '进行中', color: 'blue' },
+    DONE: { label: '完成', color: 'green' },
+  },
+  { format: 'kebab-case' }
+)
+
+const keyValue: Expect<
+  Equal<typeof KEY_STATUS.values.IN_PROGRESS, 'in-progress'>
+> = true
+const keyItem = KEY_STATUS.byValue['in-progress']
+const keyItemType: Expect<Equal<typeof keyItem.key, 'IN_PROGRESS'>> = true
+const keyItemColor: Expect<Equal<typeof keyItem.color, 'blue'>> = true
+void keyValue
+void keyItem
+void keyItemType
+void keyItemColor
+
+const CAMEL_STATUS = defineKeyEnum(
+  { IN_PROGRESS: { label: '进行中' } },
+  { format: 'lowerCamelCase' }
+)
+const camelValue: Expect<
+  Equal<typeof CAMEL_STATUS.values.IN_PROGRESS, 'inProgress'>
+> = true
+void CAMEL_STATUS
+void camelValue
+
+// @ts-expect-error key-derived enum entries must not supply their own value.
+defineKeyEnum({ SUCCESS: { value: 'success', label: '成功' } })

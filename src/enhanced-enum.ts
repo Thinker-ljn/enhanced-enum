@@ -13,6 +13,48 @@ type EnumKey<T extends EnumDefinition> = Extract<keyof T, string>
 type EnumItem<T extends EnumDefinition> = {
   [K in EnumKey<T>]: Readonly<T[K] & { key: K }>
 }[EnumKey<T>]
+export type KeyEnumDefinitionEntry = Readonly<{
+  label: string
+  value?: never
+}>
+export type KeyEnumDefinition = Readonly<
+  Record<string, KeyEnumDefinitionEntry>
+>
+export type KeyEnumFormat =
+  | 'preserve'
+  | 'upperCamelCase'
+  | 'lowerCamelCase'
+  | 'snake_case'
+  | 'kebab-case'
+export interface DefineKeyEnumOptions<
+  F extends KeyEnumFormat = KeyEnumFormat
+> {
+  format?: F
+}
+type UpperCamelKey<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Capitalize<Lowercase<Head>>}${UpperCamelKey<Tail>}`
+  : Capitalize<Lowercase<S>>
+type LowerCamelKey<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Lowercase<Head>}${UpperCamelKey<Tail>}`
+  : Lowercase<S>
+type KebabKey<S extends string> = S extends `${infer Head}_${infer Tail}`
+  ? `${Lowercase<Head>}-${KebabKey<Tail>}`
+  : Lowercase<S>
+type KeyEnumValue<K extends string, F extends KeyEnumFormat> = F extends 'preserve'
+  ? K
+  : F extends 'upperCamelCase'
+    ? UpperCamelKey<K>
+    : F extends 'lowerCamelCase'
+      ? LowerCamelKey<K>
+      : F extends 'snake_case'
+        ? Lowercase<K>
+        : KebabKey<K>
+type KeyEnumKey<T extends KeyEnumDefinition> = Extract<keyof T, string>
+type KeyEnumItem<T extends KeyEnumDefinition, F extends KeyEnumFormat> = {
+  [K in KeyEnumKey<T>]: Readonly<
+    T[K] & { key: K; value: KeyEnumValue<K, F> }
+  >
+}[KeyEnumKey<T>]
 export type EnumEntry<V extends EEValue = EEValue> = Readonly<{
   key: string
   value: V
@@ -58,6 +100,10 @@ export interface EnumResult<T extends EnumEntry> {
 }
 
 export type DefinedEnum<T extends EnumDefinition> = EnumResult<EnumItem<T>>
+export type DefinedKeyEnum<
+  T extends KeyEnumDefinition,
+  F extends KeyEnumFormat
+> = EnumResult<KeyEnumItem<T, F>>
 
 function createEnumResult<T extends EnumEntry>(
   items: readonly T[]
@@ -126,6 +172,28 @@ export function defineEnum<const T extends EnumDefinition>(
     const key = rawKey as EnumKey<T>
     const entry = definition[key]
     return Object.freeze({ key, ...entry }) as EnumItem<T>
+  })
+
+  return createEnumResult(items)
+}
+
+/**
+ * Defines an enum whose string values are derived from uppercase underscore
+ * keys. Use this API for stable string protocols such as `kebab-case` values.
+ */
+export function defineKeyEnum<
+  const T extends KeyEnumDefinition,
+  const F extends KeyEnumFormat = 'preserve'
+>(
+  definition: T,
+  options?: DefineKeyEnumOptions<F>
+): DefinedKeyEnum<T, F> {
+  const format = options?.format ?? 'preserve'
+  const items = getKeys(definition).map((rawKey) => {
+    const key = rawKey as KeyEnumKey<T>
+    const entry = definition[key]
+    const value = formatKeyEnumValue(key, format)
+    return Object.freeze({ ...entry, key, value }) as KeyEnumItem<T, F>
   })
 
   return createEnumResult(items)
@@ -261,6 +329,24 @@ function parserKey(
     case EEKeyValueType.SNAKE_CASE:
       return key.toLowerCase()
     case EEKeyValueType.KEBAB_CASE:
+      return key.toLowerCase().replace(/_/g, '-')
+    default:
+      return key
+  }
+}
+
+function formatKeyEnumValue(key: string, format: KeyEnumFormat): string {
+  checkKey(key)
+  switch (format) {
+    case 'upperCamelCase':
+      return key
+        .toLowerCase()
+        .replace(/(?:^|_)(\w)/g, (_, character) => character.toUpperCase())
+    case 'lowerCamelCase':
+      return key.toLowerCase().replace(/_(\w)/g, (_, character) => character.toUpperCase())
+    case 'snake_case':
+      return key.toLowerCase()
+    case 'kebab-case':
       return key.toLowerCase().replace(/_/g, '-')
     default:
       return key

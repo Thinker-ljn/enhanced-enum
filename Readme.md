@@ -67,6 +67,27 @@ STATUS.get(999) // undefined
 
 `get` 和 `fromKey` 均可安全接收 `unknown`；传入已知字面量时会保留精确的返回类型。
 
+## Key 派生 value：`defineKeyEnum`
+
+当 value 是稳定字符串协议，并且可以从大写下划线 key 派生时，使用 `defineKeyEnum`。它保留转换后的字符串字面量类型，并替代旧 API 的 `useKeyAsValue`。
+
+```ts
+import { defineKeyEnum } from 'enhanced-enum'
+
+const STATUS = defineKeyEnum(
+  {
+    IN_PROGRESS: { label: 'status.inProgress', color: 'blue' },
+    DONE: { label: 'status.done', color: 'green' },
+  },
+  { format: 'kebab-case' }
+)
+
+STATUS.values.IN_PROGRESS // 'in-progress'
+STATUS.byValue['in-progress'].key // 'IN_PROGRESS'
+```
+
+输入 key 必须是大写下划线格式，例如 `IN_PROGRESS`。`format` 默认是 `'preserve'`，还支持：`'upperCamelCase'`、`'lowerCamelCase'`、`'snake_case'` 和 `'kebab-case'`。
+
 ## 国际化标签
 
 库不管理翻译资源、当前语言或任何 UI 框架集成。多语言项目建议把稳定的 i18n key 放入 `label`，在渲染选项时由调用方翻译。
@@ -117,6 +138,7 @@ toLocalizedOptions(STATUS.options, translate)
 | `SUCCESS: ['成功', 1, { color: 'green' }]` | `SUCCESS: { value: 1, label: '成功', color: 'green' }` |
 | `STATUS.VALUE.SUCCESS` 是宽泛 value 类型 | `STATUS.VALUE.SUCCESS` 是字面量 `1` |
 | `DICT` 为 `{ value, label, extra }[]` | `options` 为保留每项元数据的只读数组 |
+| `useKeyAsValue` | `defineKeyEnum(..., { format })` |
 | `bind` / `bindGetter` 条件判断 | `isValue`、`get`、`fromKey` 处理外部输入和查找 |
 
 ### 旧 API 示例

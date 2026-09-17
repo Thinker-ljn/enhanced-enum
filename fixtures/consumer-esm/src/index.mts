@@ -1,4 +1,4 @@
-import { defineEnum, makeEnhancedEnum } from 'enhanced-enum'
+import { defineEnum, defineKeyEnum, makeEnhancedEnum } from 'enhanced-enum'
 
 const STATUS = defineEnum({
   SUCCESS: { value: 1, label: 'success', color: 'green' },
@@ -16,4 +16,17 @@ if (!item || item.key !== 'SUCCESS' || item.color !== 'green') {
 
 if (makeEnhancedEnum({ READY: 'ready' }).VALUE.READY !== 0) {
   throw new Error('ESM consumer could not use makeEnhancedEnum')
+}
+
+const KEY_STATUS = defineKeyEnum(
+  { IN_PROGRESS: { label: 'in progress' } },
+  { format: 'kebab-case' }
+)
+
+// @ts-expect-error the key-derived value must remain a literal string.
+const invalidKeyStatusValue: 'done' = KEY_STATUS.values.IN_PROGRESS
+void invalidKeyStatusValue
+
+if (KEY_STATUS.values.IN_PROGRESS !== 'in-progress') {
+  throw new Error('ESM consumer could not use defineKeyEnum')
 }
