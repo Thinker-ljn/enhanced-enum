@@ -42,4 +42,23 @@
 * enhanced-enum ([0e8e5d0](https://github.com/Thinker-ljn/enhanced-enum/commit/0e8e5d0f905d32bb9073747d88967c413a11bb3a))
 
 
+## [Unreleased]
+
+### 1.0.0 release notes
+
+#### Added
+
+- `defineEnum`, `defineKeyEnum`, and `defineNumberEnum` provide literal-preserving enum definitions, safe lookup guards, and `matches(value, ...keys)` for explicit branch matching.
+- Published ESM and CommonJS fixtures verify the modern API and all supported legacy constructors from the packed tarball.
+
+#### Changed
+
+- `makeEnhancedEnum`, `makeEnhancedStringEnum`, `makeEnhancedNumberEnum`, and `genMakeEnhancedEnum` remain supported. `bind` and `bindGetter` remain compatible; new code should use `matches` with an explicitly read value.
+- Legacy tuple definitions now use the same duplicate-value validation as modern definitions. A repeated value throws `Duplicate enum value: <value>` during construction.
+
+#### Breaking changes reviewed for 1.0.0
+
+- Node.js 22 or later and pnpm 10 or later are required by the published package toolchain.
+- Legacy definitions with duplicate values are rejected at construction time. Replace duplicates with distinct values before upgrading.
+- `KeyValueType` remains deprecated in favor of `EEKeyValueType`; modern code should replace key-derived legacy configuration with `defineKeyEnum` and its `format` option.
 

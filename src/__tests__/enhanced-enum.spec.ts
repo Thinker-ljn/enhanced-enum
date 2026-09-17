@@ -1,11 +1,15 @@
 import {
   buildIllegalMsg,
   checkKey,
+  defineEnum,
+  defineKeyEnum,
+  defineNumberEnum,
   EEConfig,
   genMakeEnhancedEnum,
   EEKeyValueType,
   makeEnhancedEnum,
 } from '@/enhanced-enum'
+import { describe, expect, it } from 'vitest'
 
 function genDefault(offset: EEConfig | number = 0) {
   return makeEnhancedEnum(
@@ -97,6 +101,184 @@ describe('base enum', () => {
   })
 })
 
+describe('defineEnum', () => {
+  const STATUS = defineEnum({
+    SUCCESS: { value: 1, label: '成功', color: 'green' },
+    FAIL: { value: 2, label: '失败', color: 'red', retryable: true },
+  })
+
+  it('builds key-to-value and value-to-item views', () => {
+    expect(STATUS.values).toBe(STATUS.VALUE)
+    expect(STATUS.byValue).toBe(STATUS.MAPPER)
+    expect(STATUS.VALUE).toEqual({ SUCCESS: 1, FAIL: 2 })
+    expect(STATUS.MAPPER[1]).toEqual({
+      key: 'SUCCESS',
+      value: 1,
+      label: '成功',
+      color: 'green',
+    })
+  })
+
+  it('exposes readonly options for UI dictionaries', () => {
+    expect(STATUS.options).toEqual([
+      { key: 'SUCCESS', value: 1, label: '成功', color: 'green' },
+      { key: 'FAIL', value: 2, label: '失败', color: 'red', retryable: true },
+    ])
+    expect(STATUS.DICT).toBe(STATUS.options)
+  })
+
+  it('looks up a defined item by value', () => {
+    expect(STATUS.get(2)).toEqual({
+      key: 'FAIL',
+      value: 2,
+      label: '失败',
+      color: 'red',
+      retryable: true,
+    })
+    expect(STATUS.get(99)).toBeUndefined()
+  })
+
+  it('validates external keys and values before lookup', () => {
+    expect(STATUS.isKey('SUCCESS')).toBe(true)
+    expect(STATUS.isKey('UNKNOWN')).toBe(false)
+    expect(STATUS.isKey(1)).toBe(false)
+    expect(STATUS.isValue(1)).toBe(true)
+    expect(STATUS.isValue('1')).toBe(false)
+    expect(STATUS.isValue(null)).toBe(false)
+    expect(STATUS.fromKey('SUCCESS')).toEqual({
+      key: 'SUCCESS',
+      value: 1,
+      label: '成功',
+      color: 'green',
+    })
+    expect(STATUS.fromKey('UNKNOWN')).toBeUndefined()
+  })
+
+  it('matches a value against one or more keys', () => {
+    expect(STATUS.matches(1, 'SUCCESS')).toBe(true)
+    expect(STATUS.matches(1, 'SUCCESS', 'FAIL')).toBe(true)
+    expect(STATUS.matches(1, 'FAIL')).toBe(false)
+    expect(STATUS.matches('1', 'SUCCESS')).toBe(false)
+    expect(STATUS.matches(99, 'SUCCESS', 'FAIL')).toBe(false)
+  })
+
+  it('rejects duplicate values', () => {
+    expect(() =>
+      defineEnum({
+        ONE: { value: 1, label: '一' },
+        ANOTHER_ONE: { value: 1, label: '另一个一' },
+      })
+    ).toThrowError('Duplicate enum value: 1')
+  })
+})
+
+describe('defineKeyEnum', () => {
+  it('derives values from keys and reuses the modern result surface', () => {
+    const STATUS = defineKeyEnum(
+      {
+        IN_PROGRESS: { label: '进行中', color: 'blue' },
+        DONE: { label: '完成', color: 'green' },
+      },
+      { format: 'kebab-case' }
+    )
+
+    expect(STATUS.values).toEqual({
+      IN_PROGRESS: 'in-progress',
+      DONE: 'done',
+    })
+    expect(STATUS.values).toBe(STATUS.VALUE)
+    expect(STATUS.byValue).toBe(STATUS.MAPPER)
+    expect(STATUS.options).toBe(STATUS.DICT)
+    expect(STATUS.get('in-progress')).toEqual({
+      key: 'IN_PROGRESS',
+      value: 'in-progress',
+      label: '进行中',
+      color: 'blue',
+    })
+  })
+
+  it('converts all supported formats', () => {
+    const definition = { IN_PROGRESS: { label: '进行中' } }
+
+    expect(defineKeyEnum(definition).values.IN_PROGRESS).toBe('IN_PROGRESS')
+    expect(
+      defineKeyEnum(definition, { format: 'upperCamelCase' }).values
+        .IN_PROGRESS
+    ).toBe('InProgress')
+    expect(
+      defineKeyEnum(definition, { format: 'lowerCamelCase' }).values
+        .IN_PROGRESS
+    ).toBe('inProgress')
+    expect(
+      defineKeyEnum(definition, { format: 'snake_case' }).values.IN_PROGRESS
+    ).toBe('in_progress')
+    expect(
+      defineKeyEnum(definition, { format: 'kebab-case' }).values.IN_PROGRESS
+    ).toBe('in-progress')
+  })
+
+  it('requires uppercase underscore keys', () => {
+    expect(() => defineKeyEnum({ inProgress: { label: '进行中' } })).toThrowError(
+      buildIllegalMsg('inProgress')
+    )
+  })
+})
+
+describe('defineNumberEnum', () => {
+  it('generates numeric values from a configurable start', () => {
+    const STATUS = defineNumberEnum(
+      {
+        DRAFT: { label: '草稿', color: 'gray' },
+        PUBLISHED: { label: '已发布', color: 'green' },
+      },
+      { start: 1 }
+    )
+
+    expect(STATUS.values).toEqual({ DRAFT: 1, PUBLISHED: 2 })
+    expect(STATUS.values).toBe(STATUS.VALUE)
+    expect(STATUS.byValue).toBe(STATUS.MAPPER)
+    expect(STATUS.options).toBe(STATUS.DICT)
+    expect(STATUS.fromKey('DRAFT')).toEqual({
+      key: 'DRAFT',
+      value: 1,
+      label: '草稿',
+      color: 'gray',
+    })
+  })
+
+  it('continues after explicit values only when requested', () => {
+    const definition = {
+      DRAFT: { label: '草稿' },
+      REVIEWING: { value: 10, label: '审核中' },
+      PUBLISHED: { label: '已发布' },
+    }
+
+    expect(defineNumberEnum(definition, { start: 1 }).values).toEqual({
+      DRAFT: 1,
+      REVIEWING: 10,
+      PUBLISHED: 3,
+    })
+    expect(
+      defineNumberEnum(definition, {
+        start: 1,
+        continueAfterExplicit: true,
+      }).values
+    ).toEqual({ DRAFT: 1, REVIEWING: 10, PUBLISHED: 11 })
+  })
+
+  it('outputs generated values as strings when configured', () => {
+    const STATUS = defineNumberEnum(
+      {
+        DRAFT: { label: '草稿' },
+        REVIEWING: { value: 10, label: '审核中' },
+      },
+      { start: 1, output: 'string' }
+    )
+
+    expect(STATUS.values).toEqual({ DRAFT: '1', REVIEWING: '10' })
+  })
+})
+
 describe('with extra props', () => {
   const t = genMakeEnhancedEnum<{ color?: string }>()
 
@@ -160,6 +342,24 @@ describe('bind value', () => {
     expect(eB.in('C', 'A')).toBe(false)
     expect(eB.not('C', 'A')).toBe(true)
   })
+
+  it('keeps legacy bind helpers aligned with modern matching', () => {
+    const STATUS = genDefault()
+
+    expect(STATUS.bind(1).in('B')).toBe(true)
+    expect(STATUS.bind(1).not('B')).toBe(false)
+    expect(STATUS.bindGetter(() => 2).in('C')).toBe(true)
+    expect(STATUS.bindGetter(() => 2).not('C')).toBe(false)
+  })
+
+  it('rejects duplicate legacy values through the shared enum core', () => {
+    expect(() =>
+      makeEnhancedEnum({
+        ONE: ['一', 1],
+        ANOTHER_ONE: ['另一个一', 1],
+      })
+    ).toThrowError('Duplicate enum value: 1')
+  })
 })
 
 function genDefault2(offset: EEConfig | number = 0) {
@@ -178,28 +378,36 @@ function genDefault2(offset: EEConfig | number = 0) {
 
 describe('use key as value', () => {
   const STATUS = genDefault2({ useKeyAsValue: true })
-  expect(STATUS.VALUE.AZ_AZ).toBe('AZ_AZ')
-  expect(STATUS.VALUE.BZ_BZ).toBe('BZ_BZ')
+  it('converts keys according to the configured format', () => {
+    expect(STATUS.VALUE.AZ_AZ).toBe('AZ_AZ')
+    expect(STATUS.VALUE.BZ_BZ).toBe('BZ_BZ')
 
-  const STATUS2 = genDefault2({
-    useKeyAsValue: EEKeyValueType.UPPER_CAMEL_CASE,
+    const STATUS2 = genDefault2({
+      useKeyAsValue: EEKeyValueType.UPPER_CAMEL_CASE,
+    })
+    expect(STATUS2.VALUE.AZ_AZ).toBe('AzAz')
+    expect(STATUS2.VALUE.BZ_BZ).toBe('BzBz')
+
+    const STATUS3 = genDefault2({
+      useKeyAsValue: EEKeyValueType.LOWER_CAMEL_CASE,
+    })
+    expect(STATUS3.VALUE.AZ_AZ).toBe('azAz')
+    expect(STATUS3.VALUE.BZ_BZ).toBe('bzBz')
+
+    const STATUS4 = genDefault2({ useKeyAsValue: EEKeyValueType.SNAKE_CASE })
+    expect(STATUS4.VALUE.AZ_AZ).toBe('az_az')
+    expect(STATUS4.VALUE.BZ_BZ).toBe('bz_bz')
+
+    const STATUS5 = genDefault2({ useKeyAsValue: EEKeyValueType.KEBAB_CASE })
+    expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
+    expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
+    expect(
+      makeEnhancedEnum(
+        { AA_BB_CC: '多分段' },
+        { useKeyAsValue: EEKeyValueType.KEBAB_CASE }
+      ).VALUE.AA_BB_CC
+    ).toBe('aa-bb-cc')
   })
-  expect(STATUS2.VALUE.AZ_AZ).toBe('AzAz')
-  expect(STATUS2.VALUE.BZ_BZ).toBe('BzBz')
-
-  const STATUS3 = genDefault2({
-    useKeyAsValue: EEKeyValueType.LOWER_CAMEL_CASE,
-  })
-  expect(STATUS3.VALUE.AZ_AZ).toBe('azAz')
-  expect(STATUS3.VALUE.BZ_BZ).toBe('bzBz')
-
-  const STATUS4 = genDefault2({ useKeyAsValue: EEKeyValueType.SNAKE_CASE })
-  expect(STATUS4.VALUE.AZ_AZ).toBe('az_az')
-  expect(STATUS4.VALUE.BZ_BZ).toBe('bz_bz')
-
-  const STATUS5 = genDefault2({ useKeyAsValue: EEKeyValueType.KEBAB_CASE })
-  expect(STATUS5.VALUE.AZ_AZ).toBe('az-az')
-  expect(STATUS5.VALUE.BZ_BZ).toBe('bz-bz')
 })
 
 describe('check key', () => {
