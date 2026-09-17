@@ -1,6 +1,6 @@
 {
   "name": "enhanced-enum",
-  "version": "0.4.1",
+  "version": "1.0.0-alpha.0",
   "type": "module",
   "description": "a enhanced enum with typescript intellisense",
   "packageManager": "pnpm@10.33.0",
