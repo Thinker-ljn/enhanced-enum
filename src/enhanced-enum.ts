@@ -10,38 +10,109 @@ export type EnumDefinitionEntry<V extends EEValue = EEValue> = Readonly<{
 
 export type EnumDefinition = Readonly<Record<string, EnumDefinitionEntry>>
 type EnumKey<T extends EnumDefinition> = Extract<keyof T, string>
-type EnumValue<T extends EnumDefinition> = T[EnumKey<T>]['value']
 type EnumItem<T extends EnumDefinition> = {
   [K in EnumKey<T>]: Readonly<T[K] & { key: K }>
 }[EnumKey<T>]
-type EnumItemByValue<
-  T extends EnumDefinition,
-  V extends EnumValue<T>
-> = Extract<EnumItem<T>, { readonly value: V }>
-type EnumItemByKey<
-  T extends EnumDefinition,
-  K extends EnumKey<T>
-> = Extract<EnumItem<T>, { readonly key: K }>
+export type EnumEntry<V extends EEValue = EEValue> = Readonly<{
+  key: string
+  value: V
+  label: string
+}>
+type EntryKey<T extends EnumEntry> = T['key']
+type EntryValue<T extends EnumEntry> = T['value']
+type EntryByKey<T extends EnumEntry, K extends EntryKey<T>> = Extract<
+  T,
+  { readonly key: K }
+>
+type EntryByValue<T extends EnumEntry, V extends EntryValue<T>> = Extract<
+  T,
+  { readonly value: V }
+>
+type EnumValues<T extends EnumEntry> = {
+  readonly [K in EntryKey<T>]: EntryByKey<T, K>['value']
+}
+type EnumByValue<T extends EnumEntry> = {
+  readonly [V in EntryValue<T>]: EntryByValue<T, V>
+}
+type Mutable<T> = { -readonly [K in keyof T]: T[K] }
 
 /**
- * The literal-preserving result of {@link defineEnum}.
+ * The shared result of modern enum definitions.
  *
- * `VALUE` supports key-to-value access, while `MAPPER` supports value-to-item
- * access. `options` and `DICT` contain the same readonly items for UI usage.
+ * Lowercase members are the recommended API. Uppercase members are compatibility
+ * aliases which point to the same readonly data.
  */
-export interface DefinedEnum<T extends EnumDefinition> {
-  readonly VALUE: { readonly [K in EnumKey<T>]: T[K]['value'] }
-  readonly MAPPER: {
-    readonly [V in EnumValue<T>]: EnumItemByValue<T, V>
-  }
-  readonly options: readonly EnumItem<T>[]
-  readonly DICT: readonly EnumItem<T>[]
-  isKey(key: unknown): key is EnumKey<T>
-  isValue(value: unknown): value is EnumValue<T>
-  get<V extends EnumValue<T>>(value: V): EnumItemByValue<T, V> | undefined
-  get(value: unknown): EnumItem<T> | undefined
-  fromKey<K extends EnumKey<T>>(key: K): EnumItemByKey<T, K>
-  fromKey(key: unknown): EnumItem<T> | undefined
+export interface EnumResult<T extends EnumEntry> {
+  readonly values: EnumValues<T>
+  readonly byValue: EnumByValue<T>
+  readonly options: readonly T[]
+  readonly VALUE: EnumValues<T>
+  readonly MAPPER: EnumByValue<T>
+  readonly DICT: readonly T[]
+  isKey(key: unknown): key is EntryKey<T>
+  isValue(value: unknown): value is EntryValue<T>
+  get<V extends EntryValue<T>>(value: V): EntryByValue<T, V> | undefined
+  get(value: unknown): T | undefined
+  fromKey<K extends EntryKey<T>>(key: K): EntryByKey<T, K> | undefined
+  fromKey(key: unknown): T | undefined
+}
+
+export type DefinedEnum<T extends EnumDefinition> = EnumResult<EnumItem<T>>
+
+function createEnumResult<T extends EnumEntry>(
+  items: readonly T[]
+): EnumResult<T> {
+  const values = Object.create(null) as Mutable<EnumValues<T>>
+  const byValue = Object.create(null) as Mutable<EnumByValue<T>>
+  const valueSet = new Set<EEValue>()
+
+  items.forEach((item) => {
+    if (valueSet.has(item.value)) {
+      throw new Error(`Duplicate enum value: ${String(item.value)}`)
+    }
+
+    valueSet.add(item.value)
+    values[item.key as EntryKey<T>] = item.value as EnumValues<T>[EntryKey<T>]
+    byValue[item.value as EntryValue<T>] = item as EnumByValue<T>[EntryValue<T>]
+  })
+
+  const readonlyValues = Object.freeze(values)
+  const readonlyByValue = Object.freeze(byValue)
+  const readonlyOptions = Object.freeze([...items]) as readonly T[]
+
+  return Object.freeze({
+    values: readonlyValues,
+    byValue: readonlyByValue,
+    options: readonlyOptions,
+    VALUE: readonlyValues,
+    MAPPER: readonlyByValue,
+    DICT: readonlyOptions,
+    isKey(key: unknown): key is EntryKey<T> {
+      return (
+        typeof key === 'string' &&
+        Object.prototype.hasOwnProperty.call(readonlyValues, key)
+      )
+    },
+    isValue(value: unknown): value is EntryValue<T> {
+      return (
+        (typeof value === 'string' || typeof value === 'number') &&
+        valueSet.has(value)
+      )
+    },
+    get(value: unknown) {
+      return (
+        (typeof value === 'string' || typeof value === 'number') &&
+        valueSet.has(value)
+      )
+        ? readonlyByValue[value as EntryValue<T>]
+        : undefined
+    },
+    fromKey(key: unknown) {
+      return typeof key === 'string' && Object.prototype.hasOwnProperty.call(readonlyValues, key)
+        ? readonlyByValue[readonlyValues[key as EntryKey<T>]]
+        : undefined
+    },
+  }) as EnumResult<T>
 }
 
 /**
@@ -51,66 +122,13 @@ export interface DefinedEnum<T extends EnumDefinition> {
 export function defineEnum<const T extends EnumDefinition>(
   definition: T
 ): DefinedEnum<T> {
-  const value = Object.create(null) as {
-    -readonly [K in EnumKey<T>]: T[K]['value']
-  }
-  const mapper = Object.create(null) as {
-    -readonly [V in EnumValue<T>]: EnumItemByValue<T, V>
-  }
-  const options: EnumItem<T>[] = []
-  const values = new Set<EEValue>()
-
-  getKeys(definition).forEach((rawKey) => {
+  const items = getKeys(definition).map((rawKey) => {
     const key = rawKey as EnumKey<T>
     const entry = definition[key]
-    if (values.has(entry.value)) {
-      throw new Error(`Duplicate enum value: ${String(entry.value)}`)
-    }
-
-    values.add(entry.value)
-    const item = Object.freeze({ key, ...entry }) as EnumItem<T>
-
-    value[key] = entry.value
-    mapper[entry.value as EnumValue<T>] = item as EnumItemByValue<
-      T,
-      EnumValue<T>
-    >
-    options.push(item)
+    return Object.freeze({ key, ...entry }) as EnumItem<T>
   })
 
-  const readonlyOptions = Object.freeze(options)
-  const readonlyMapper = Object.freeze(mapper)
-  return Object.freeze({
-    VALUE: Object.freeze(value),
-    MAPPER: readonlyMapper,
-    options: readonlyOptions,
-    DICT: readonlyOptions,
-    isKey(key: unknown): key is EnumKey<T> {
-      return (
-        typeof key === 'string' &&
-        Object.prototype.hasOwnProperty.call(definition, key)
-      )
-    },
-    isValue(candidate: unknown): candidate is EnumValue<T> {
-      return (
-        (typeof candidate === 'string' || typeof candidate === 'number') &&
-        values.has(candidate)
-      )
-    },
-    get(candidate: unknown) {
-      return (
-        (typeof candidate === 'string' || typeof candidate === 'number') &&
-        values.has(candidate)
-      )
-        ? readonlyMapper[candidate as EnumValue<T>]
-        : undefined
-    },
-    fromKey(key: unknown) {
-      return typeof key === 'string' && Object.prototype.hasOwnProperty.call(definition, key)
-        ? readonlyMapper[value[key as EnumKey<T>]]
-        : undefined
-    },
-  }) as DefinedEnum<T>
+  return createEnumResult(items)
 }
 
 interface EEDictOption<E extends NullAndObject, V extends EEValue = EEValue> {

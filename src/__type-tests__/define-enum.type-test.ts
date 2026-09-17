@@ -14,7 +14,15 @@ const STATUS = defineEnum({
 
 type ValueByKey = Expect<Equal<typeof STATUS.VALUE.SUCCESS, 1>>
 type ValueUnion = Expect<Equal<(typeof STATUS.VALUE)[keyof typeof STATUS.VALUE], 1 | 2>>
-const valueAssertions: ValueByKey | ValueUnion = true
+type RecommendedValueByKey = Expect<Equal<typeof STATUS.values.SUCCESS, 1>>
+type RecommendedValueUnion = Expect<
+  Equal<(typeof STATUS.values)[keyof typeof STATUS.values], 1 | 2>
+>
+const valueAssertions:
+  | ValueByKey
+  | ValueUnion
+  | RecommendedValueByKey
+  | RecommendedValueUnion = true
 void valueAssertions
 
 const success = STATUS.get(1)
@@ -31,6 +39,13 @@ type Option = (typeof STATUS.options)[number]
 type OptionKeys = Expect<Equal<Option['key'], 'SUCCESS' | 'FAIL'>>
 const optionAssertion: OptionKeys = true
 void optionAssertion
+
+const failure = STATUS.byValue[2]
+const failureKey: Expect<Equal<typeof failure.key, 'FAIL'>> = true
+const failureRetryable: Expect<Equal<typeof failure.retryable, true>> = true
+void failure
+void failureKey
+void failureRetryable
 
 declare const externalKey: unknown
 if (STATUS.isKey(externalKey)) {

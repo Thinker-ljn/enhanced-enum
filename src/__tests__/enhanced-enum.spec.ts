@@ -106,6 +106,8 @@ describe('defineEnum', () => {
   })
 
   it('builds key-to-value and value-to-item views', () => {
+    expect(STATUS.values).toBe(STATUS.VALUE)
+    expect(STATUS.byValue).toBe(STATUS.MAPPER)
     expect(STATUS.VALUE).toEqual({ SUCCESS: 1, FAIL: 2 })
     expect(STATUS.MAPPER[1]).toEqual({
       key: 'SUCCESS',

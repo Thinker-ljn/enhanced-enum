@@ -12,7 +12,9 @@ import type {
   DefinedEnum,
   EEConfig,
   EEResult,
+  EnumEntry,
   EnumDefinition,
+  EnumResult,
   EnumDefinitionEntry,
 } from './enhanced-enum.js'
 
@@ -27,6 +29,8 @@ export {
   EEKeyValueType,
   EEResult,
   DefinedEnum,
+  EnumEntry,
   EnumDefinition,
   EnumDefinitionEntry,
+  EnumResult,
 }
