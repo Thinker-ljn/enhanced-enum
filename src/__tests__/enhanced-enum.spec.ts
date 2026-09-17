@@ -3,6 +3,7 @@ import {
   checkKey,
   defineEnum,
   defineKeyEnum,
+  defineNumberEnum,
   EEConfig,
   genMakeEnhancedEnum,
   EEKeyValueType,
@@ -212,6 +213,61 @@ describe('defineKeyEnum', () => {
     expect(() => defineKeyEnum({ inProgress: { label: '进行中' } })).toThrowError(
       buildIllegalMsg('inProgress')
     )
+  })
+})
+
+describe('defineNumberEnum', () => {
+  it('generates numeric values from a configurable start', () => {
+    const STATUS = defineNumberEnum(
+      {
+        DRAFT: { label: '草稿', color: 'gray' },
+        PUBLISHED: { label: '已发布', color: 'green' },
+      },
+      { start: 1 }
+    )
+
+    expect(STATUS.values).toEqual({ DRAFT: 1, PUBLISHED: 2 })
+    expect(STATUS.values).toBe(STATUS.VALUE)
+    expect(STATUS.byValue).toBe(STATUS.MAPPER)
+    expect(STATUS.options).toBe(STATUS.DICT)
+    expect(STATUS.fromKey('DRAFT')).toEqual({
+      key: 'DRAFT',
+      value: 1,
+      label: '草稿',
+      color: 'gray',
+    })
+  })
+
+  it('continues after explicit values only when requested', () => {
+    const definition = {
+      DRAFT: { label: '草稿' },
+      REVIEWING: { value: 10, label: '审核中' },
+      PUBLISHED: { label: '已发布' },
+    }
+
+    expect(defineNumberEnum(definition, { start: 1 }).values).toEqual({
+      DRAFT: 1,
+      REVIEWING: 10,
+      PUBLISHED: 3,
+    })
+    expect(
+      defineNumberEnum(definition, {
+        start: 1,
+        continueAfterExplicit: true,
+      }).values
+    ).toEqual({ DRAFT: 1, REVIEWING: 10, PUBLISHED: 11 })
+  })
+
+  it('outputs generated values as strings when configured', () => {
+    const STATUS = defineNumberEnum(
+      {
+        DRAFT: { label: '草稿' },
+        REVIEWING: { value: 10, label: '审核中' },
+      },
+      { start: 1, output: 'string' }
+    )
+
+    expect(STATUS.values).toEqual({ DRAFT: '1', REVIEWING: '10' })
   })
 })
 

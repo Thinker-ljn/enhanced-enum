@@ -52,9 +52,46 @@ type KeyEnumValue<K extends string, F extends KeyEnumFormat> = F extends 'preser
 type KeyEnumKey<T extends KeyEnumDefinition> = Extract<keyof T, string>
 type KeyEnumItem<T extends KeyEnumDefinition, F extends KeyEnumFormat> = {
   [K in KeyEnumKey<T>]: Readonly<
-    T[K] & { key: K; value: KeyEnumValue<K, F> }
+    Omit<T[K], 'value'> & { key: K; value: KeyEnumValue<K, F> }
   >
 }[KeyEnumKey<T>]
+export type NumberEnumDefinitionEntry = Readonly<{
+  label: string
+  value?: number
+}>
+export type NumberEnumDefinition = Readonly<
+  Record<string, NumberEnumDefinitionEntry>
+>
+export type NumberEnumOutput = 'number' | 'string'
+export interface DefineNumberEnumOptions<
+  O extends NumberEnumOutput = NumberEnumOutput
+> {
+  start?: number
+  continueAfterExplicit?: boolean
+  output?: O
+}
+type NumberEnumKey<T extends NumberEnumDefinition> = Extract<keyof T, string>
+type NumberEnumValue<
+  T extends NumberEnumDefinitionEntry,
+  O extends NumberEnumOutput
+> = O extends 'string'
+  ? T extends { readonly value: infer V extends number }
+    ? `${V}`
+    : string
+  : T extends { readonly value: infer V extends number }
+    ? V
+    : number
+type NumberEnumItem<
+  T extends NumberEnumDefinition,
+  O extends NumberEnumOutput
+> = {
+  [K in NumberEnumKey<T>]: Readonly<
+    Omit<T[K], 'value'> & {
+      key: K
+      value: NumberEnumValue<T[K], O>
+    }
+  >
+}[NumberEnumKey<T>]
 export type EnumEntry<V extends EEValue = EEValue> = Readonly<{
   key: string
   value: V
@@ -104,6 +141,10 @@ export type DefinedKeyEnum<
   T extends KeyEnumDefinition,
   F extends KeyEnumFormat
 > = EnumResult<KeyEnumItem<T, F>>
+export type DefinedNumberEnum<
+  T extends NumberEnumDefinition,
+  O extends NumberEnumOutput
+> = EnumResult<NumberEnumItem<T, O>>
 
 function createEnumResult<T extends EnumEntry>(
   items: readonly T[]
@@ -194,6 +235,39 @@ export function defineKeyEnum<
     const entry = definition[key]
     const value = formatKeyEnumValue(key, format)
     return Object.freeze({ ...entry, key, value }) as KeyEnumItem<T, F>
+  })
+
+  return createEnumResult(items)
+}
+
+/**
+ * Defines an enum with generated numeric values. Explicit numeric values may
+ * be mixed with generated ones, but generated values are typed as `number`.
+ */
+export function defineNumberEnum<
+  const T extends NumberEnumDefinition,
+  const O extends NumberEnumOutput = 'number'
+>(
+  definition: T,
+  options?: DefineNumberEnumOptions<O>
+): DefinedNumberEnum<T, O> {
+  const start = options?.start ?? 0
+  const continueAfterExplicit = options?.continueAfterExplicit ?? false
+  const output = options?.output ?? 'number'
+  let nextValue = start
+
+  const items = getKeys(definition).map((rawKey, index) => {
+    const key = rawKey as NumberEnumKey<T>
+    const entry = definition[key]
+    const defaultValue = continueAfterExplicit ? nextValue : start + index
+    const numericValue = entry.value ?? defaultValue
+    nextValue = numericValue + 1
+
+    const value = output === 'string' ? String(numericValue) : numericValue
+    return Object.freeze({ ...entry, key, value }) as unknown as NumberEnumItem<
+      T,
+      O
+    >
   })
 
   return createEnumResult(items)

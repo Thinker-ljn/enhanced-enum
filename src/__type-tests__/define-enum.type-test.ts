@@ -1,4 +1,4 @@
-import { defineEnum, defineKeyEnum } from '@/enhanced-enum'
+import { defineEnum, defineKeyEnum, defineNumberEnum } from '@/enhanced-enum'
 
 type Equal<Left, Right> = (<Value>() => Value extends Left ? 1 : 2) extends <
   Value
@@ -97,3 +97,35 @@ void camelValue
 
 // @ts-expect-error key-derived enum entries must not supply their own value.
 defineKeyEnum({ SUCCESS: { value: 'success', label: '成功' } })
+
+const NUMBER_STATUS = defineNumberEnum({
+  DRAFT: { label: '草稿' },
+  REVIEWING: { value: 10, label: '审核中' },
+})
+
+const generatedNumberValue: Expect<
+  Equal<typeof NUMBER_STATUS.values.DRAFT, number>
+> = true
+const explicitNumberValue: Expect<
+  Equal<typeof NUMBER_STATUS.values.REVIEWING, 10>
+> = true
+const numberItem = NUMBER_STATUS.fromKey('REVIEWING')
+if (numberItem) {
+  const numberItemValue: Expect<Equal<typeof numberItem.value, 10>> = true
+  void numberItemValue
+}
+void generatedNumberValue
+void explicitNumberValue
+
+const STRING_NUMBER_STATUS = defineNumberEnum(
+  { REVIEWING: { value: 10, label: '审核中' } },
+  { output: 'string' }
+)
+const stringNumberValue: Expect<
+  Equal<typeof STRING_NUMBER_STATUS.values.REVIEWING, '10'>
+> = true
+void STRING_NUMBER_STATUS
+void stringNumberValue
+
+// @ts-expect-error number-generated enum entries only accept numeric aliases.
+defineNumberEnum({ REVIEWING: { value: '10', label: '审核中' } })

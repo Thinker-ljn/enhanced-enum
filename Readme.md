@@ -88,6 +88,29 @@ STATUS.byValue['in-progress'].key // 'IN_PROGRESS'
 
 输入 key 必须是大写下划线格式，例如 `IN_PROGRESS`。`format` 默认是 `'preserve'`，还支持：`'upperCamelCase'`、`'lowerCamelCase'`、`'snake_case'` 和 `'kebab-case'`。
 
+## 自动数字 value：`defineNumberEnum`
+
+当 value 按声明顺序递增，但少数条目需要指定编号时，使用 `defineNumberEnum`。它支持数字或数字字符串输出；自动生成的 value 在类型上是宽泛的 `number` 或 `string`，显式 value 仍保留字面量类型。
+
+```ts
+import { defineNumberEnum } from 'enhanced-enum'
+
+const STATUS = defineNumberEnum(
+  {
+    DRAFT: { label: '草稿' },
+    REVIEWING: { value: 10, label: '审核中' },
+    PUBLISHED: { label: '已发布' },
+  },
+  { start: 1, continueAfterExplicit: true, output: 'string' }
+)
+
+STATUS.values.DRAFT // '1'
+STATUS.values.REVIEWING // '10'，类型为 '10'
+STATUS.values.PUBLISHED // '11'
+```
+
+`start` 默认是 `0`。`continueAfterExplicit` 默认是 `false`，此时每个自动 value 都由 `start + 声明索引` 决定；设为 `true` 后，显式数字 value 会成为后续自动编号的起点。`output` 默认是 `'number'`，设为 `'string'` 可生成数字字符串。
+
 ## 国际化标签
 
 库不管理翻译资源、当前语言或任何 UI 框架集成。多语言项目建议把稳定的 i18n key 放入 `label`，在渲染选项时由调用方翻译。
@@ -128,10 +151,9 @@ toLocalizedOptions(STATUS.options, translate)
 `makeEnhancedEnum`、`makeEnhancedStringEnum`、`makeEnhancedNumberEnum` 和 `genMakeEnhancedEnum` 继续受支持，不会因 `defineEnum` 而移除。它们适合以下情况：
 
 - 项目已大量使用 tuple 定义，短期内不计划迁移。
-- 需要基于声明顺序自动生成数字 value。
-- 需要 `offset`、`useKeyAsValue` 或 `autoIncrementAfterAlias` 等旧配置。
+- 依赖 `bind` 或 `bindGetter` 的条件判断。
 
-新代码优先使用 `defineEnum`，因为它避免 tuple 位置语义，并保留每个 value 与条目元数据的精确类型。
+新代码优先使用 `defineEnum`；需要 key 派生字符串时使用 `defineKeyEnum`，需要自动数字编号时使用 `defineNumberEnum`。这些 API 避免 tuple 位置语义，并尽可能保留每个 value 与条目元数据的精确类型。
 
 | 旧 API | 现代 API |
 | --- | --- |
@@ -139,6 +161,9 @@ toLocalizedOptions(STATUS.options, translate)
 | `STATUS.VALUE.SUCCESS` 是宽泛 value 类型 | `STATUS.VALUE.SUCCESS` 是字面量 `1` |
 | `DICT` 为 `{ value, label, extra }[]` | `options` 为保留每项元数据的只读数组 |
 | `useKeyAsValue` | `defineKeyEnum(..., { format })` |
+| `offset` | `defineNumberEnum(..., { start })` |
+| `autoIncrementAfterAlias` | `defineNumberEnum(..., { continueAfterExplicit: true })` |
+| `useStringNumberValue` | `defineNumberEnum(..., { output: 'string' })` |
 | `bind` / `bindGetter` 条件判断 | `isValue`、`get`、`fromKey` 处理外部输入和查找 |
 
 ### 旧 API 示例

@@ -1,6 +1,7 @@
 import {
   defineEnum,
   defineKeyEnum,
+  defineNumberEnum,
   genMakeEnhancedEnum,
   makeEnhancedEnum,
   makeEnhancedNumberEnum,
@@ -12,7 +13,9 @@ import {
 import type {
   DefinedEnum,
   DefinedKeyEnum,
+  DefinedNumberEnum,
   DefineKeyEnumOptions,
+  DefineNumberEnumOptions,
   EEConfig,
   EEResult,
   EnumEntry,
@@ -22,11 +25,15 @@ import type {
   KeyEnumDefinition,
   KeyEnumDefinitionEntry,
   KeyEnumFormat,
+  NumberEnumDefinition,
+  NumberEnumDefinitionEntry,
+  NumberEnumOutput,
 } from './enhanced-enum.js'
 
 export {
   defineEnum,
   defineKeyEnum,
+  defineNumberEnum,
   genMakeEnhancedEnum,
   makeEnhancedEnum,
   makeEnhancedNumberEnum,
@@ -37,7 +44,9 @@ export {
   EEResult,
   DefinedEnum,
   DefinedKeyEnum,
+  DefinedNumberEnum,
   DefineKeyEnumOptions,
+  DefineNumberEnumOptions,
   EnumEntry,
   EnumDefinition,
   EnumDefinitionEntry,
@@ -45,4 +54,7 @@ export {
   KeyEnumDefinition,
   KeyEnumDefinitionEntry,
   KeyEnumFormat,
+  NumberEnumDefinition,
+  NumberEnumDefinitionEntry,
+  NumberEnumOutput,
 }

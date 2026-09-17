@@ -1,4 +1,9 @@
-import { defineEnum, defineKeyEnum, makeEnhancedEnum } from 'enhanced-enum'
+import {
+  defineEnum,
+  defineKeyEnum,
+  defineNumberEnum,
+  makeEnhancedEnum,
+} from 'enhanced-enum'
 
 const STATUS = defineEnum({
   SUCCESS: { value: 1, label: 'success', color: 'green' },
@@ -29,4 +34,25 @@ void invalidKeyStatusValue
 
 if (KEY_STATUS.values.IN_PROGRESS !== 'in-progress') {
   throw new Error('ESM consumer could not use defineKeyEnum')
+}
+
+const NUMBER_STATUS = defineNumberEnum(
+  {
+    DRAFT: { label: 'draft' },
+    REVIEWING: { value: 10, label: 'reviewing' },
+    PUBLISHED: { label: 'published' },
+  },
+  { start: 1, continueAfterExplicit: true, output: 'string' }
+)
+
+// @ts-expect-error explicit numeric values must become literal strings.
+const invalidNumberStatusValue: '11' = NUMBER_STATUS.values.REVIEWING
+void invalidNumberStatusValue
+
+if (
+  NUMBER_STATUS.values.DRAFT !== '1' ||
+  NUMBER_STATUS.values.REVIEWING !== '10' ||
+  NUMBER_STATUS.values.PUBLISHED !== '11'
+) {
+  throw new Error('ESM consumer could not use defineNumberEnum')
 }
