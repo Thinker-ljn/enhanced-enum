@@ -130,10 +130,19 @@ export interface EnumResult<T extends EnumEntry> {
   readonly DICT: readonly T[]
   isKey(key: unknown): key is EntryKey<T>
   isValue(value: unknown): value is EntryValue<T>
+  matches(value: unknown, ...keys: EntryKey<T>[]): boolean
   get<V extends EntryValue<T>>(value: V): EntryByValue<T, V> | undefined
   get(value: unknown): T | undefined
   fromKey<K extends EntryKey<T>>(key: K): EntryByKey<T, K> | undefined
   fromKey(key: unknown): T | undefined
+}
+
+function matchesEnumValue<K extends PropertyKey, V>(
+  values: Readonly<Record<K, V>>,
+  value: unknown,
+  keys: readonly K[]
+): boolean {
+  return keys.some((key) => values[key] === value)
 }
 
 export type DefinedEnum<T extends EnumDefinition> = EnumResult<EnumItem<T>>
@@ -185,6 +194,9 @@ function createEnumResult<T extends EnumEntry>(
         (typeof value === 'string' || typeof value === 'number') &&
         valueSet.has(value)
       )
+    },
+    matches(value: unknown, ...keys: EntryKey<T>[]): boolean {
+      return matchesEnumValue(readonlyValues, value, keys)
     },
     get(value: unknown) {
       return (
@@ -509,40 +521,9 @@ export function genMakeEnhancedEnum<
     offset: EEConfig | number = 0
   ): EEResult<T, E, V> {
     const config = parserConfig(offset)
-    const result: EEResult<T, E, V> = {
-      bind(value) {
-        return {
-          in(...keys) {
-            return keys.some((k) => result.VALUE[k] === value)
-          },
-          not(...keys) {
-            return keys.every((k) => result.VALUE[k] !== value)
-          },
-          value,
-          label: result.LABEL[value],
-          extra: result.EXTRA[value],
-          mapper: result.MAPPER[value],
-        }
-      },
-      bindGetter(getter) {
-        return {
-          in(...keys) {
-            const value = getter()
-            return keys.some((k) => result.VALUE[k] === value)
-          },
-          not(...keys) {
-            const value = getter()
-            return keys.every((k) => result.VALUE[k] !== value)
-          },
-        }
-      },
-      DICT: [],
-      VALUE: {} as Record<keyof T, V>,
-      EXTRA: {} as Record<V, E | undefined>,
-      LABEL: {} as Record<V, string>,
-      MAPPER: {} as Record<V, EEMapper<T, E, V>>,
-    }
+    const items: Array<EnumEntry<V> & { extra?: E }> = []
     const keys = getKeys(input)
+
     wrapperAutoIncrement(config, keys, (key, defaultValue) => {
       const rawDisplay = input[key] as EEValueConfig<E, V>
       const {
@@ -555,23 +536,58 @@ export function genMakeEnhancedEnum<
         ? (String(cutsomValue) as V)
         : cutsomValue
 
-      result.VALUE[key] = value
-      result.LABEL[value] = label
-      result.EXTRA[value] = extra
-      result.MAPPER[value] = {
-        key,
-        label,
-        value,
-        extra,
-      }
-      result.DICT.push({
-        label,
-        value,
-        extra,
-      })
-
+      items.push({ key: key as string, label, value, extra })
       return cutsomValue
     })
+
+    const core = createEnumResult(items)
+    const values = core.values as unknown as Record<keyof T, V>
+    const byValue = core.byValue as unknown as Record<V, EEMapper<T, E, V>>
+    const labels = Object.create(null) as Record<V, string>
+    const extras = Object.create(null) as Record<V, E | undefined>
+    const dict: EEDictOption<E, V>[] = []
+
+    core.options.forEach(({ label, value, extra }) => {
+      labels[value] = label
+      extras[value] = extra
+      dict.push({ label, value, extra })
+    })
+
+    const matches = (value: unknown, matchKeys: readonly (keyof T)[]) =>
+      matchesEnumValue(values, value, matchKeys)
+    const result: EEResult<T, E, V> = {
+      bind(value) {
+        return {
+          in(...keys) {
+            return matches(value, keys)
+          },
+          not(...keys) {
+            return !matches(value, keys)
+          },
+          value,
+          label: result.LABEL[value],
+          extra: result.EXTRA[value],
+          mapper: result.MAPPER[value],
+        }
+      },
+      bindGetter(getter) {
+        return {
+          in(...keys) {
+            const value = getter()
+            return matches(value, keys)
+          },
+          not(...keys) {
+            const value = getter()
+            return !matches(value, keys)
+          },
+        }
+      },
+      DICT: dict,
+      VALUE: values,
+      EXTRA: extras,
+      LABEL: labels,
+      MAPPER: byValue,
+    }
     return result
   }
 

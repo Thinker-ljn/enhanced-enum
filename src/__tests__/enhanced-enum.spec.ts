@@ -154,6 +154,14 @@ describe('defineEnum', () => {
     expect(STATUS.fromKey('UNKNOWN')).toBeUndefined()
   })
 
+  it('matches a value against one or more keys', () => {
+    expect(STATUS.matches(1, 'SUCCESS')).toBe(true)
+    expect(STATUS.matches(1, 'SUCCESS', 'FAIL')).toBe(true)
+    expect(STATUS.matches(1, 'FAIL')).toBe(false)
+    expect(STATUS.matches('1', 'SUCCESS')).toBe(false)
+    expect(STATUS.matches(99, 'SUCCESS', 'FAIL')).toBe(false)
+  })
+
   it('rejects duplicate values', () => {
     expect(() =>
       defineEnum({
@@ -333,6 +341,24 @@ describe('bind value', () => {
     expect(eB.in('A', 'B')).toBe(true)
     expect(eB.in('C', 'A')).toBe(false)
     expect(eB.not('C', 'A')).toBe(true)
+  })
+
+  it('keeps legacy bind helpers aligned with modern matching', () => {
+    const STATUS = genDefault()
+
+    expect(STATUS.bind(1).in('B')).toBe(true)
+    expect(STATUS.bind(1).not('B')).toBe(false)
+    expect(STATUS.bindGetter(() => 2).in('C')).toBe(true)
+    expect(STATUS.bindGetter(() => 2).not('C')).toBe(false)
+  })
+
+  it('rejects duplicate legacy values through the shared enum core', () => {
+    expect(() =>
+      makeEnhancedEnum({
+        ONE: ['一', 1],
+        ANOTHER_ONE: ['另一个一', 1],
+      })
+    ).toThrowError('Duplicate enum value: 1')
   })
 })
 

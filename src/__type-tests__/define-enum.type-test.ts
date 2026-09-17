@@ -59,6 +59,11 @@ if (STATUS.isValue(externalValue)) {
   void narrowedValue
 }
 
+STATUS.matches(1, 'SUCCESS', 'FAIL')
+
+// @ts-expect-error matches only accepts keys from this enum definition.
+STATUS.matches(1, 'UNKNOWN')
+
 // @ts-expect-error undefined keys must not be accepted by the key-to-value map.
 void STATUS.VALUE.UNKNOWN
 

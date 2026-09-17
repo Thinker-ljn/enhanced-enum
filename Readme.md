@@ -158,13 +158,29 @@ toLocalizedOptions(STATUS.options, translate)
 | 旧 API | 现代 API |
 | --- | --- |
 | `SUCCESS: ['成功', 1, { color: 'green' }]` | `SUCCESS: { value: 1, label: '成功', color: 'green' }` |
+| `makeEnhancedStringEnum` | value 显式时使用 `defineEnum`；可由 key 派生时使用 `defineKeyEnum` |
+| `makeEnhancedNumberEnum` | `defineNumberEnum` |
+| `genMakeEnhancedEnum<Extra>()` | 在 `defineEnum` 条目中直接声明扩展字段 |
 | `STATUS.VALUE.SUCCESS` 是宽泛 value 类型 | `STATUS.VALUE.SUCCESS` 是字面量 `1` |
 | `DICT` 为 `{ value, label, extra }[]` | `options` 为保留每项元数据的只读数组 |
 | `useKeyAsValue` | `defineKeyEnum(..., { format })` |
 | `offset` | `defineNumberEnum(..., { start })` |
 | `autoIncrementAfterAlias` | `defineNumberEnum(..., { continueAfterExplicit: true })` |
 | `useStringNumberValue` | `defineNumberEnum(..., { output: 'string' })` |
-| `bind` / `bindGetter` 条件判断 | `isValue`、`get`、`fromKey` 处理外部输入和查找 |
+| `bind(value).in('SUCCESS', 'FAIL')` | `STATUS.matches(value, 'SUCCESS', 'FAIL')` |
+| `bindGetter(() => state.status)` | 先读取 `const value = state.status`，再调用 `STATUS.matches(value, ...)` |
+
+`matches` 用于已取得 value 的枚举分支判断；`isValue`、`get` 和 `fromKey` 仍适合处理接口、URL 等外部输入和查找。`bind` 与 `bindGetter` 继续兼容，但不建议在新代码中使用。尤其是 `bindGetter` 会在每次 `in` 或 `not` 时重新读取 getter，它不提供 Vue、React 或其他框架的响应式订阅。
+
+```ts
+const value = state.status
+
+if (STATUS.matches(value, 'SUCCESS', 'FAIL')) {
+  // value 来自同一时刻的明确快照
+}
+```
+
+在具备上述等价迁移路径前，旧 API 不标记为弃用。
 
 ### 旧 API 示例
 
